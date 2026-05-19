@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1089315039468",
+    "project_id": "autocare-16784",
+    "storage_bucket": "autocare-16784.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089315039468:android:0a8faa8da775eef9445dc9",
+        "android_client_info": {
+          "package_name": "com.il4mb.autocare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6guc8n8OXkbek8oGub6LvEAih5IMhPMk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
