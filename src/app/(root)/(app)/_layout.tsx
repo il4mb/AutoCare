@@ -1,13 +1,13 @@
-import RootLayout from "@/components/roots/RootLayout";
+import DashLayout from "@/components/dash/DashLayout";
 import { Stack } from "expo-router";
 
-export default function DashLayout() {
+export default function Layout() {
 
     return (
-        <RootLayout>
+        <DashLayout>
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" />
             </Stack>
-        </RootLayout>
+        </DashLayout>
     );
 }

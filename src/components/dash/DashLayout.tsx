@@ -1,15 +1,15 @@
-import React, { useCallback, useMemo } from "react"
-import { View } from "../View"
-import { Text } from "../Text"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { Pressable } from "react-native"
 import { FontAwesome6 } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
+import React, { useCallback, useMemo } from "react"
+import { Pressable } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Text } from "../Text"
+import { View } from "../View"
 
 type Props = {
     children?: React.ReactNode
 }
-export default function RootLayout({ children }: Props) {
+export default function DashLayout({ children }: Props) {
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -22,12 +22,11 @@ export default function RootLayout({ children }: Props) {
     }), [insets])
 
     const openDrawer = useCallback(() => {
-        console.log('Opening drawer')
         router.push('/drawer')
     }, [router])
 
     return (
-        <View style={containerStyle}>
+        <View style={[containerStyle, { flex: 1 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                 <Pressable onPress={openDrawer}
                     style={{
