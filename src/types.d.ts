@@ -21,10 +21,14 @@ type Vehicle = {
     fuelType: string
 }
 
+type Diagnostic = {
+    dtc: string
+    date: string
+}
+
 /** Global state of the editor */
 export interface State {
-    vehicles: Vehicle[]
-    selectedVehicle: string | null
+    // diagnostics: Diagnostic[]
 }
 
 /** Mapping of action types to their payloads */

@@ -8,10 +8,7 @@ export default function Layout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <AppProvider>
                 <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen
-                        name="(suspension)"
-                        options={{ headerShown: false }}
-                    />
+                    <Stack.Screen name="(app)" />
                     <Stack.Screen name='add-profile' />
                 </Stack>
             </AppProvider>
