@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Fragment } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View, ViewStyle } from "react-native";
 import { Text } from "./Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@react-navigation/native";
@@ -14,9 +14,10 @@ interface Props {
         onGoBack?: () => void;
     }
     applyInsets?: boolean; // Opsi untuk mengontrol apakah padding insets diterapkan pada konten
+    style?: ViewStyle
 }
 
-export default function ScreenLayout({ children, header, applyInsets = false }: Props) {
+export default function ScreenLayout({ children, header, applyInsets = false, style }: Props) {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
@@ -52,10 +53,11 @@ export default function ScreenLayout({ children, header, applyInsets = false }: 
                 </View>
             )}
             <View style={{
-                flex: 1, backgroundColor: colors.bg,
-                paddingHorizontal: 16,
+                flex: 1,
+                backgroundColor: colors.bg,
                 paddingBottom: applyInsets ? insets.bottom : 0,
                 paddingTop: applyInsets ? insets.top + 12 : 0,
+                ...style
             }}>
                 {children}
             </View>

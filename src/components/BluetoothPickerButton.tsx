@@ -2,18 +2,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "./Text";
 
-type Connection = {
-    name: string | null;
-    address: string | null;
-}
-
 interface ConnectionFieldProps {
     name?: string;
     address?: string;
     onPress: () => void;
 }
 
-export default function ConnectionPickerButton({ name, address, onPress }: ConnectionFieldProps) {
+export default function BluetoothPickerButton({ name, address, onPress }: ConnectionFieldProps) {
     const isConnected = !!address;
 
     return (

@@ -26,7 +26,7 @@ export default function DiagnoseList() {
         },
     ];
 
-    const gotoCreateDiagnose = () => router.push('/diagnose');
+    const gotoCreateDiagnose = () => router.push('/create-diagnose');
 
 
     return (

@@ -6,7 +6,9 @@ export default function Profile() {
     return (
         <ScreenLayout applyInsets>
             <View>
-                <Text type="title">Profil Pengguna</Text>
+                <Text type="title">
+                    Profil Pengguna
+                </Text>
                 <Text>Fitur ini sedang dalam pengembangan. Nantikan pembaruan selanjutnya!</Text>
             </View>
         </ScreenLayout>

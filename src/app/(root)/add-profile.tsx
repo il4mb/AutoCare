@@ -1,4 +1,4 @@
-import ConnectionPickerButton from "@/components/BluetoothPickerButton";
+import BluetoothPickerButton from "@/components/BluetoothPickerButton";
 import BluetoothScannerModal from "@/components/BluetoothScannerModal";
 import { Button } from "@/components/Button";
 import ScreenLayout from "@/components/ScreenLayout";
@@ -58,7 +58,7 @@ export default function AddProfileScreen() {
                 <BlurTargetView ref={blurTargetRef} style={styles.container}>
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <Text style={styles.sectionTitle}>Koneksi Perangkat</Text>
-                        <ConnectionPickerButton
+                        <BluetoothPickerButton
                             name={data.connection.deviceName ?? undefined}
                             address={data.connection.deviceAddress ?? undefined}
                             onPress={() => setModalVisible(true)}

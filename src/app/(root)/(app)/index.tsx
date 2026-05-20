@@ -4,9 +4,9 @@ import ScreenLayout from '@/components/ScreenLayout';
 import { Diagnostic } from '@/types';
 import { useState } from 'react';
 import { Button } from '@/components/Button';
-import { Link, router, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
-import { FontAwesome5, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
+import { FontAwesome6 } from '@expo/vector-icons';
 import DiagnoseList from '@/components/diagnoses/DiagnoseList';
 
 export default function HomeScreen() {
@@ -16,13 +16,13 @@ export default function HomeScreen() {
     const isEmpty = diagnostics.length === 0;
     const [showEmptyState, setShowEmptyState] = useState(() => diagnostics.length === 0);
 
-    const gotoDiagnose = () => router.push('/diagnose');
+    const gotoCreateDiagnose = () => router.push('/diagnose');
     const gotoProfile = () => router.push('/profile');
     const closeEmptyState = () => setShowEmptyState(false);
 
 
     return (
-        <ScreenLayout applyInsets>
+        <ScreenLayout style={{ paddingHorizontal: 22 }} applyInsets>
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 16, paddingVertical: 12 }}>
                 <View style={{ flex: 1 }}>
                     <Text type="title" style={{ marginBottom: 0 }}>
@@ -43,7 +43,7 @@ export default function HomeScreen() {
                     </Text>
                     <Button
                         title="Mulai Diagnosa"
-                        onPress={gotoDiagnose}
+                        onPress={gotoCreateDiagnose}
                         style={{ paddingHorizontal: 42, marginTop: 8 }}
                     />
                     <Pressable onPress={closeEmptyState}>
