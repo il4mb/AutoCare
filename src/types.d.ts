@@ -12,7 +12,7 @@ export interface State {
 
 /** Mapping of action types to their payloads */
 export type ActionMap = {
-    SAMPLE: { id: string }
+    SET_VEHICLE: { id: string }
 }
 
 /** Union of all possible editor actions */

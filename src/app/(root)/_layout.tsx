@@ -1,20 +1,20 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppProvider from "@/contexts/AppProvider";
 import { Stack } from "expo-router";
 
 export default function Layout() {
 
     return (
-        <AppProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(app)" />
-                <Stack.Screen
-                    name="drawer"
-                    options={{
-                        animation: "slide_from_left",
-                        presentation: "containedModal",
-                    }}
-                />
-            </Stack>
-        </AppProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <AppProvider>
+                <Stack>
+                    <Stack.Screen
+                        name="(app)"
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen name='add-profile' />
+                </Stack>
+            </AppProvider>
+        </GestureHandlerRootView>
     );
 }

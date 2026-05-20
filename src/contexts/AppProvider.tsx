@@ -1,5 +1,5 @@
 import { initialState, reducer } from "@/reducer";
-import { State } from "@/types";
+import { Action, State } from "@/types";
 import { createContext, useContext, useReducer } from "react";
 
 type Props = {
@@ -17,7 +17,7 @@ export default function AppProvider({ children }: Props) {
 
 type AppContextType = {
     state: State
-    dispatch: React.Dispatch<any>
+    dispatch: React.Dispatch<Action>
 }
 const Context = createContext<AppContextType | undefined>(undefined);
 export const useApp = () => {

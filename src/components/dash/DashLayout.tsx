@@ -5,6 +5,7 @@ import { Pressable } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Text } from "../Text"
 import { View } from "../View"
+import { useSelectedVehicle } from "@/hooks/use-selected-vehicle"
 
 type Props = {
     children?: React.ReactNode
@@ -13,6 +14,7 @@ export default function DashLayout({ children }: Props) {
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const selectedVehicle = useSelectedVehicle();
 
     const containerStyle = useMemo(() => ({
         marginTop: insets.top,
@@ -43,7 +45,7 @@ export default function DashLayout({ children }: Props) {
                         color="#fff" />
                 </Pressable>
                 <Text>
-                    Honda Accord 2018
+                    {selectedVehicle?.name || "Select a Vehicle"}
                 </Text>
             </View>
             {children}

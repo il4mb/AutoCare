@@ -17,10 +17,10 @@ export const initialState: State = {
 
 export const reducer = (state: State, action: Action) => {
     switch (action.type) {
-        case 'SAMPLE':
+        case 'SET_VEHICLE':
             return {
                 ...state,
-                vehicles: state.vehicles.filter(v => v.id !== action.payload.id)
+                selectedVehicle: action.payload.id
             }
         default:
             return state;
