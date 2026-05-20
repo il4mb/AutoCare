@@ -9,7 +9,7 @@ export default function Layout() {
             <AppProvider>
                 <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen
-                        name="(app)"
+                        name="(suspension)"
                         options={{ headerShown: false }}
                     />
                     <Stack.Screen name='add-profile' />
