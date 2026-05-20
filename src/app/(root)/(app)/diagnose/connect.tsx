@@ -35,7 +35,12 @@ export default function Connect() {
     const sendTestData = useCallback(async () => {
         if (!connect.connected) return;
         try {
-            await connect.write("03\r");
+            await connect.write("ATZ\n");
+            await connect.write("ATE0\n");
+            await connect.write("ATL0\n");
+            await connect.write("ATSP0\n");
+            await connect.write("0100\n");
+            await connect.write("03\r\n");
             console.log("Data berhasil dikirim ke perangkat.");
         } catch (error) {
             console.error("Gagal mengirim data:", error);
