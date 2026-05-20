@@ -24,34 +24,25 @@ export default function AddProfileScreen() {
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ headerTitle: "Tambah Kendaraan" }} />
-
-            {/* Bungkus konten yang ingin di-blur dengan BlurTargetView */}
             <BlurTargetView ref={blurTargetRef} style={styles.container}>
                 <ScrollView contentContainerStyle={styles.scrollContent}>
-
                     <Text style={styles.sectionTitle}>Koneksi Perangkat</Text>
-
                     <ConnectionField
                         deviceName={selectedDeviceName}
                         deviceAddress={selectedDeviceAddress}
                         onPress={() => setModalVisible(true)}
                     />
-
                     <View style={styles.dummyFormArea}>
                         <Text style={{ color: '#999' }}>Sisa form ada di sini...</Text>
                     </View>
-
                 </ScrollView>
             </BlurTargetView>
-
-            {/* Panggil Modal dan oper blurTargetRef */}
             <BluetoothScannerModal
                 visible={modalVisible}
                 blurTargetRef={blurTargetRef}
                 onClose={() => setModalVisible(false)}
                 onSelect={handleSelectDevice}
             />
-
         </View>
     );
 }

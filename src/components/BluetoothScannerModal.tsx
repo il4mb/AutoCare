@@ -1,12 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, View, Text, Pressable, Modal, TextInput, FlatList, ActivityIndicator, PermissionsAndroid, Platform, ViewProps } from "react-native";
+import React, { useState, useEffect } from "react";
+import { StyleSheet, View, Text, Pressable, Modal, TextInput, FlatList, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { BleManager, Device } from "react-native-ble-plx";
-import * as ExpoDevice from "expo-device";
-
-// Inisialisasi BLE Manager di luar komponen agar tidak re-render
-const bleManager = new BleManager();
+import { useBluetooth } from "@/hooks/use-bluetooth";
 
 interface BluetoothScannerModalProps {
     visible: boolean;
@@ -15,101 +11,47 @@ interface BluetoothScannerModalProps {
     onSelect: (address: string, name: string) => void;
 }
 
-export default function BluetoothScannerModal({ visible, blurTargetRef, onClose, onSelect }: BluetoothScannerModalProps) {
+export default function BluetoothScannerModal({
+    visible, blurTargetRef, onClose, onSelect
+}: BluetoothScannerModalProps) {
 
-    const [activeTab, setActiveTab] = useState<'scan' | 'manual'>('scan');
-    const [isScanning, setIsScanning] = useState(false);
-    const [devices, setDevices] = useState<Device[]>([]);
+    // Panggil hook Bluetooth
+    const {
+        pairedDevices, scannedDevices, isScanning, isLoadingPaired,
+        fetchPairedDevices, startScan, stopScan
+    } = useBluetooth();
+
+    // UI State
+    const [activeTab, setActiveTab] = useState<'paired' | 'scan' | 'manual'>('paired');
     const [manualAddress, setManualAddress] = useState("");
 
-    // --- PERMISSIONS LOGIC ---
-    const requestPermissions = async () => {
-        if (Platform.OS === 'android') {
-            if ((ExpoDevice.platformApiLevel ?? -1) < 31) {
-                const granted = await PermissionsAndroid.request(
-                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                    {
-                        title: 'Location Permission',
-                        message: 'Bluetooth Low Energy requires Location',
-                        buttonPositive: 'OK',
-                    }
-                );
-                return granted === PermissionsAndroid.RESULTS.GRANTED;
-            } else {
-                const isReadGranted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN);
-                const isConnectGranted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
-                return (
-                    isReadGranted === PermissionsAndroid.RESULTS.GRANTED &&
-                    isConnectGranted === PermissionsAndroid.RESULTS.GRANTED
-                );
-            }
-        }
-        return true; // iOS diurus otomatis oleh info.plist / config plugin
-    };
-
-    // --- SCANNING LOGIC ---
-    const startScan = async () => {
-        const hasPermission = await requestPermissions();
-        if (!hasPermission) return;
-
-        setDevices([]);
-        setIsScanning(true);
-
-        bleManager.startDeviceScan(null, null, (error, scannedDevice) => {
-            if (error) {
-                console.error(error);
-                setIsScanning(false);
-                return;
-            }
-
-            // Simpan device jika memiliki nama (hilangkan device anonim)
-            if (scannedDevice && scannedDevice.name) {
-                setDevices((prevDevices) => {
-                    if (!prevDevices.find((dev) => dev.id === scannedDevice.id)) {
-                        return [...prevDevices, scannedDevice];
-                    }
-                    return prevDevices;
-                });
-            }
-        });
-
-        // Auto-stop scan setelah 10 detik untuk hemat baterai
-        setTimeout(() => {
-            stopScan();
-        }, 10000);
-    };
-
-    const stopScan = () => {
-        bleManager.stopDeviceScan();
-        setIsScanning(false);
-    };
-
-    // Bersihkan scanning saat modal ditutup
+    // Trigger logika Bluetooth berdasarkan tab yang aktif
     useEffect(() => {
-        if (visible && activeTab === 'scan') {
-            startScan();
+        if (visible) {
+            if (activeTab === 'paired') {
+                stopScan();
+                fetchPairedDevices();
+            } else if (activeTab === 'scan') {
+                startScan();
+            }
         } else {
+            // Hentikan scan jika modal ditutup
             stopScan();
         }
-        return () => stopScan();
     }, [visible, activeTab]);
 
     return (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={visible}
-            onRequestClose={onClose}
-        >
+        <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
             <BlurView
-                blurTarget={blurTargetRef} // Menggunakan referensi dari parent
+                blurTarget={blurTargetRef}
                 style={StyleSheet.absoluteFill}
                 tint="dark"
                 intensity={100}
-                blurMethod="dimezisBlurView"
-            >
+                blurMethod="dimezisBlurView">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
+
+                        {/* HEADER */}
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Pilih Perangkat</Text>
                             <Pressable onPress={onClose} style={styles.closeBtn}>
@@ -117,67 +59,77 @@ export default function BluetoothScannerModal({ visible, blurTargetRef, onClose,
                             </Pressable>
                         </View>
 
+                        {/* TAB SWITCHER */}
                         <View style={styles.tabContainer}>
-                            <Pressable
-                                style={[styles.tabButton, activeTab === 'scan' && styles.tabActive]}
-                                onPress={() => setActiveTab('scan')}
-                            >
-                                <Text style={[styles.tabText, activeTab === 'scan' && styles.tabTextActive]}>Scan Device</Text>
+                            <Pressable style={[styles.tabButton, activeTab === 'paired' && styles.tabActive]} onPress={() => setActiveTab('paired')}>
+                                <Text style={[styles.tabText, activeTab === 'paired' && styles.tabTextActive]}>Tersimpan</Text>
                             </Pressable>
-                            <Pressable
-                                style={[styles.tabButton, activeTab === 'manual' && styles.tabActive]}
-                                onPress={() => setActiveTab('manual')}
-                            >
-                                <Text style={[styles.tabText, activeTab === 'manual' && styles.tabTextActive]}>Input Manual</Text>
+                            <Pressable style={[styles.tabButton, activeTab === 'scan' && styles.tabActive]} onPress={() => setActiveTab('scan')}>
+                                <Text style={[styles.tabText, activeTab === 'scan' && styles.tabTextActive]}>Pindai Baru</Text>
+                            </Pressable>
+                            <Pressable style={[styles.tabButton, activeTab === 'manual' && styles.tabActive]} onPress={() => setActiveTab('manual')}>
+                                <Text style={[styles.tabText, activeTab === 'manual' && styles.tabTextActive]}>Manual</Text>
                             </Pressable>
                         </View>
 
-                        {/* TAB SCAN */}
-                        {activeTab === 'scan' && (
+                        {/* TAB KONTEN: TERSIMPAN (BONDED) */}
+                        {activeTab === 'paired' && (
                             <View style={styles.tabBody}>
-                                {isScanning && devices.length === 0 ? (
-                                    <View style={styles.centerContent}>
-                                        <ActivityIndicator size="large" color="#0252ff" />
-                                        <Text style={styles.scanText}>Mencari perangkat di sekitar...</Text>
-                                    </View>
+                                {isLoadingPaired ? (
+                                    <ActivityIndicator size="large" color="#0252ff" style={{ marginTop: 20 }} />
                                 ) : (
                                     <FlatList
-                                        data={devices}
-                                        keyExtractor={(item) => item.id}
+                                        data={pairedDevices}
+                                        keyExtractor={(item) => item.address}
                                         renderItem={({ item }) => (
-                                            <Pressable
-                                                style={styles.deviceItem}
-                                                onPress={() => onSelect(item.id, item.name || "Unknown")}
-                                            >
+                                            <Pressable style={styles.deviceItem} onPress={() => onSelect(item.address, item.name)}>
                                                 <MaterialCommunityIcons name="bluetooth" size={20} color="#555" />
                                                 <View style={styles.deviceInfo}>
                                                     <Text style={styles.deviceName}>{item.name}</Text>
-                                                    <Text style={styles.deviceAddress}>{item.id}</Text>
+                                                    <Text style={styles.deviceAddress}>{item.address}</Text>
                                                 </View>
                                             </Pressable>
                                         )}
-                                        ListEmptyComponent={
-                                            <View style={styles.centerContent}>
-                                                <Text style={styles.scanText}>Tidak ada perangkat ditemukan.</Text>
-                                            </View>
-                                        }
+                                        ListEmptyComponent={<Text style={styles.emptyText}>Tidak ada perangkat tersimpan.</Text>}
                                     />
                                 )}
-                                <Pressable
-                                    style={styles.rescanButton}
-                                    onPress={isScanning ? stopScan : startScan}
-                                >
-                                    <Text style={styles.rescanText}>
-                                        {isScanning ? "Berhenti Pindai" : "Pindai Ulang"}
-                                    </Text>
+                            </View>
+                        )}
+
+                        {/* TAB KONTEN: PINDAI BARU (DISCOVERY) */}
+                        {activeTab === 'scan' && (
+                            <View style={styles.tabBody}>
+                                {isScanning && scannedDevices.length === 0 ? (
+                                    <View style={styles.centerContent}>
+                                        <ActivityIndicator size="large" color="#0252ff" />
+                                        <Text style={styles.scanText}>Mencari perangkat...</Text>
+                                    </View>
+                                ) : (
+                                    <FlatList
+                                        data={scannedDevices}
+                                        keyExtractor={(item) => item.address}
+                                        renderItem={({ item }) => (
+                                            <Pressable style={styles.deviceItem} onPress={() => onSelect(item.address, item.name)}>
+                                                <MaterialCommunityIcons name="bluetooth" size={20} color="#555" />
+                                                <View style={styles.deviceInfo}>
+                                                    <Text style={styles.deviceName}>{item.name}</Text>
+                                                    <Text style={styles.deviceAddress}>{item.address}</Text>
+                                                </View>
+                                            </Pressable>
+                                        )}
+                                        ListEmptyComponent={<Text style={styles.emptyText}>Tidak ada perangkat ditemukan.</Text>}
+                                    />
+                                )}
+                                <Pressable style={styles.rescanButton} onPress={isScanning ? stopScan : startScan}>
+                                    <Text style={styles.rescanText}>{isScanning ? "Berhenti Pindai" : "Pindai Ulang"}</Text>
                                 </Pressable>
                             </View>
                         )}
 
-                        {/* TAB MANUAL */}
+                        {/* TAB KONTEN: MANUAL */}
                         {activeTab === 'manual' && (
                             <View style={styles.tabBody}>
-                                <Text style={styles.inputLabel}>Masukkan MAC Address Bluetooth:</Text>
+                                <Text style={styles.inputLabel}>MAC Address Bluetooth:</Text>
                                 <TextInput
                                     style={styles.textInput}
                                     placeholder="Contoh: 00:1D:A5:02:03:57"
@@ -188,7 +140,10 @@ export default function BluetoothScannerModal({ visible, blurTargetRef, onClose,
                                 />
                                 <Pressable
                                     style={[styles.submitButton, !manualAddress.trim() && styles.submitButtonDisabled]}
-                                    onPress={() => onSelect(manualAddress.trim(), "Perangkat Manual")}
+                                    onPress={() => {
+                                        onSelect(manualAddress.trim(), "Perangkat Manual");
+                                        setManualAddress("");
+                                    }}
                                     disabled={!manualAddress.trim()}
                                 >
                                     <Text style={styles.submitButtonText}>Hubungkan</Text>
@@ -202,6 +157,7 @@ export default function BluetoothScannerModal({ visible, blurTargetRef, onClose,
     );
 }
 
+// ... styles tetap sama seperti yang kita buat sebelumnya ...
 const styles = StyleSheet.create({
     modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
     modalContent: { width: "100%", backgroundColor: "#fff", borderRadius: 16, overflow: "hidden" },
@@ -227,4 +183,5 @@ const styles = StyleSheet.create({
     submitButton: { backgroundColor: "#0252ff", padding: 14, borderRadius: 8, alignItems: "center" },
     submitButtonDisabled: { backgroundColor: "#ccc" },
     submitButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+    emptyText: { textAlign: 'center', marginTop: 20, color: '#888' }
 });
