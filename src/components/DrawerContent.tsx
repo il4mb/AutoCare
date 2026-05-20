@@ -6,9 +6,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./Text";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useTheme } from "@react-navigation/native";
 
 export default function DrawerContent() {
 
+    const { colors } = useTheme();
     const { state, dispatch } = useApp();
     const insets = useSafeAreaInsets();
     const vehicles = useMemo(() => state.vehicles, [state.vehicles]);
@@ -30,9 +32,9 @@ export default function DrawerContent() {
                         source={require('@/assets/garage.png')}
                         style={styles.headerIcon}
                         contentFit="cover"
-                        tintColor={"#fff"}
+                        tintColor={"#44004d"}
                     />
-                    <Text style={styles.headerTitle}>
+                    <Text style={styles.headerTitle} type="title">
                         Garasi Saya
                     </Text>
                 </View>
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 20,
-        color: '#fff',
+        color: '#44004d',
     },
     listContent: {
         paddingHorizontal: 20,
@@ -100,11 +102,10 @@ const styles = StyleSheet.create({
     vehicleName: {
         fontSize: 16,
         lineHeight: 18,
-        color: '#fff',
     },
     vehicleEngine: {
         fontSize: 13,
-        color: '#8e8e93',
+        color: '#00000075',
     },
     radioContainer: {
         marginLeft: 16,
@@ -116,6 +117,6 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: '#3a3b46',
+        borderColor: '#b5b9e0',
     }
 });

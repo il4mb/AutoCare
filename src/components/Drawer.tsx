@@ -7,6 +7,7 @@ import { Text } from "./Text";
 import DrawerContent from "./DrawerContent";
 import { useRouter } from "expo-router";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { useTheme } from "@react-navigation/native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = 300;
@@ -17,6 +18,7 @@ interface DrawerProps {
 
 export default function Drawer({ children }: DrawerProps) {
 
+    const { colors } = useTheme();
     const router = useRouter();
     const targetRef = useRef<View | null>(null);
 
@@ -74,14 +76,6 @@ export default function Drawer({ children }: DrawerProps) {
     const blurAnimatedStyle = useAnimatedStyle(() => {
         const isCompletelyClosed = translateX.value === -DRAWER_WIDTH;
         return {
-            opacity: interpolate(
-                translateX.value,
-                [-DRAWER_WIDTH, 0],
-                [0, 1],
-                Extrapolation.CLAMP
-            ),
-            // Keeps the blur in place until the drawer is completely closed.
-            // Once closed, moves it off-screen so you can interact with the app.
             transform: [
                 { translateX: isCompletelyClosed ? -SCREEN_WIDTH : 0 }
             ]
@@ -152,22 +146,20 @@ export default function Drawer({ children }: DrawerProps) {
                             <BlurView
                                 blurTarget={targetRef}
                                 style={styles.container}
-                                tint="dark"
                                 blurMethod="dimezisBlurView"
-                                intensity={100}
+                                intensity={40}
                             />
                         </Pressable>
                     </Animated.View>
 
-                    <Animated.View style={[styles.drawer, drawerAnimatedStyle]}>
+                    <Animated.View style={[styles.drawer, drawerAnimatedStyle, { backgroundColor: colors.bgElement }]}>
                         <DrawerContent />
                     </Animated.View>
 
-                    {/* The Animated FAB */}
                     <Animated.View style={[styles.fabContainer, fabAnimatedStyle]}>
-                        <Pressable style={styles.fabButton} onPress={gotoAddProfile}>
-                            <FontAwesome6 name="plus" size={20} color="#000" />
-                            <Text style={styles.fabText}>
+                        <Pressable style={[styles.fabButton, { backgroundColor: colors.primary }]} onPress={gotoAddProfile}>
+                            <FontAwesome6 name="plus" size={20} color={colors.textInverted} />
+                            <Text type="smallBold" style={{ color: colors.textInverted }}>
                                 Tambah
                             </Text>
                         </Pressable>
@@ -197,31 +189,30 @@ const styles = StyleSheet.create({
         width: DRAWER_WIDTH,
         height: '100%',
         zIndex: 1200,
-        backgroundColor: 'rgb(18, 22, 27)',
+        elevation: 5, // Drawer berada di elevasi 5
+        shadowColor: 'rgba(0, 0, 0, 0.2)',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
     },
     fabContainer: {
         position: 'absolute',
         bottom: 100,
         right: 20,
-        zIndex: 1300,
+        zIndex: 1500,
+        elevation: 10, // <--- TAMBAHKAN INI. Harus lebih besar dari elevation drawer
     },
     fabButton: {
-        backgroundColor: '#fff',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        borderRadius: 24, // High border radius for pill/FAB shape
+        borderRadius: 24,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        // Added shadow to make it "float"
         elevation: 5,
-        shadowColor: '#000',
+        shadowColor: 'rgba(0, 0, 0, 0.2)',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
-    },
-    fabText: {
-        color: '#000',
-        fontWeight: 'bold',
     }
 });

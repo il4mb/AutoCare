@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, Pressable, Modal, TextInput, FlatList, ActivityIndicator } from "react-native";
+import { StyleSheet, View, Pressable, Modal, TextInput, FlatList, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useBluetooth } from "@/hooks/use-bluetooth";
+import { Text } from "@/components/Text";
 
 interface BluetoothScannerModalProps {
     visible: boolean;
@@ -45,9 +46,9 @@ export default function BluetoothScannerModal({
             <BlurView
                 blurTarget={blurTargetRef}
                 style={StyleSheet.absoluteFill}
-                tint="dark"
-                intensity={100}
-                blurMethod="dimezisBlurView">
+                tint="light"
+                blurMethod="dimezisBlurView"
+                intensity={100}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
 
@@ -144,8 +145,7 @@ export default function BluetoothScannerModal({
                                         onSelect(manualAddress.trim(), "Perangkat Manual");
                                         setManualAddress("");
                                     }}
-                                    disabled={!manualAddress.trim()}
-                                >
+                                    disabled={!manualAddress.trim()}>
                                     <Text style={styles.submitButtonText}>Hubungkan</Text>
                                 </Pressable>
                             </View>
@@ -157,7 +157,6 @@ export default function BluetoothScannerModal({
     );
 }
 
-// ... styles tetap sama seperti yang kita buat sebelumnya ...
 const styles = StyleSheet.create({
     modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
     modalContent: { width: "100%", backgroundColor: "#fff", borderRadius: 16, overflow: "hidden" },

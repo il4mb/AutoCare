@@ -7,7 +7,7 @@ export default function Layout() {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <AppProvider>
-                <Stack>
+                <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen
                         name="(app)"
                         options={{ headerShown: false }}

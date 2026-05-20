@@ -1,3 +1,17 @@
+import { ThemeColor } from "./constants/theme"
+
+declare global {
+    namespace ReactNavigation {
+
+        interface Theme {
+            colors: {
+                [key in ThemeColor]: string
+            }
+            fonts: ThemeFonts
+        }
+    }
+}
+
 type Vehicle = {
     id: string
     engine: string

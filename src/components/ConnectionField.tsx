@@ -1,5 +1,6 @@
-import { StyleSheet, View, Text, Pressable } from "react-native";
+import { StyleSheet, View, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Text } from "./Text";
 
 interface ConnectionFieldProps {
     deviceName?: string | null;
