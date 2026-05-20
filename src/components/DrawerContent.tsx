@@ -32,30 +32,29 @@ export default function DrawerContent() {
                         source={require('@/assets/garage.png')}
                         style={styles.headerIcon}
                         contentFit="cover"
-                        tintColor={"#44004d"}
+                        tintColor={colors.primary}
                     />
-                    <Text style={styles.headerTitle} type="title">
+                    <Text style={[styles.headerTitle, { color: colors.primary }]} type="title">
                         Garasi Saya
                     </Text>
                 </View>
             )}
             renderItem={({ item }) => {
                 const isSelected = state.selectedVehicle === item.id;
-
                 return (
                     <Pressable style={[styles.vehicleCard]}
                         onPress={() => dispatch({ type: 'SET_VEHICLE', payload: { id: item.id } })}>
                         <View style={styles.cardInfo}>
-                            <Text style={styles.vehicleName}>
+                            <Text style={[styles.vehicleName, isSelected && { color: colors.primary }]} type='smallBold'>
                                 {item.name}
                             </Text>
-                            <Text style={styles.vehicleEngine}>
+                            <Text style={[styles.vehicleEngine, isSelected && { color: colors.primary }]}>
                                 Engine: {item.engine}
                             </Text>
                         </View>
                         <View style={styles.radioContainer}>
                             {isSelected ? (
-                                <FontAwesome6 name="circle-check" size={20} color="#0252ff" />
+                                <FontAwesome6 name="circle-check" size={20} color={colors.primary} />
                             ) : (
                                 <View style={styles.radioUnselected} />
                             )}
@@ -80,8 +79,7 @@ const styles = StyleSheet.create({
         height: 22,
     },
     headerTitle: {
-        fontSize: 20,
-        color: '#44004d',
+        fontSize: 20
     },
     listContent: {
         paddingHorizontal: 20,
@@ -117,6 +115,6 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: '#b5b9e0',
+        borderColor: '#cccccc',
     }
 });

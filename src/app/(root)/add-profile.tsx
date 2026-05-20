@@ -1,26 +1,55 @@
+import ConnectionPickerButton from "@/components/BluetoothPickerButton";
 import BluetoothScannerModal from "@/components/BluetoothScannerModal";
-import ConnectionField from "@/components/ConnectionField";
+import { Button } from "@/components/Button";
 import ScreenLayout from "@/components/ScreenLayout";
+import { SelectField } from "@/components/SelectField";
 import { Text } from "@/components/Text";
+import { TextField } from "@/components/TextField";
 import { BlurTargetView } from "expo-blur";
 import { Stack } from "expo-router";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 export default function AddProfileScreen() {
+
     // Reference untuk BlurView Dimezis
     const blurTargetRef = useRef<View | null>(null);
-
-    // State
     const [modalVisible, setModalVisible] = useState(false);
-    const [selectedDeviceName, setSelectedDeviceName] = useState<string | null>(null);
-    const [selectedDeviceAddress, setSelectedDeviceAddress] = useState<string | null>(null);
 
-    const handleSelectDevice = (address: string, name: string) => {
-        setSelectedDeviceAddress(address);
-        setSelectedDeviceName(name);
+    const [data, setData] = useState({
+        vehicleName: '',
+        manufactureYear: '',
+        model: '',
+        fuelType: '',
+        licensePlate: '',
+        connection: {
+            deviceName: null as string | null,
+            deviceAddress: null as string | null,
+        }
+    })
+
+
+    const updateData = useCallback((field: string, value: string) => {
+        setData(prev => ({
+            ...prev,
+            [field]: value,
+        }));
+    }, []);
+
+    const handleSelectDevice = useCallback((address: string, name: string) => {
+        setData(prev => ({
+            ...prev,
+            connection: {
+                deviceName: name,
+                deviceAddress: address,
+            }
+        }));
         setModalVisible(false);
-    };
+    }, []);
+
+    const handleSaveProfile = useCallback(() => {
+
+    }, [data]);
 
     return (
         <ScreenLayout header={{ title: "Tambah Kendaraan" }}>
@@ -29,13 +58,55 @@ export default function AddProfileScreen() {
                 <BlurTargetView ref={blurTargetRef} style={styles.container}>
                     <ScrollView contentContainerStyle={styles.scrollContent}>
                         <Text style={styles.sectionTitle}>Koneksi Perangkat</Text>
-                        <ConnectionField
-                            deviceName={selectedDeviceName}
-                            deviceAddress={selectedDeviceAddress}
+                        <ConnectionPickerButton
+                            name={data.connection.deviceName ?? undefined}
+                            address={data.connection.deviceAddress ?? undefined}
                             onPress={() => setModalVisible(true)}
                         />
-                        <View style={styles.dummyFormArea}>
-                            <Text style={{ color: '#999' }}>Sisa form ada di sini...</Text>
+                        <View style={styles.formArea}>
+                            <TextField
+                                label="Nama Kendaraan"
+                                placeholder="Masukkan nama kendaraan"
+                                style={{ width: "100%" }}
+                                value={data.vehicleName}
+                                onChangeText={(value) => updateData("vehicleName", value)}
+                            />
+                            <TextField
+                                label="Tahun Pembuatan"
+                                placeholder="Masukkan tahun pembuatan"
+                                style={{ width: "100%" }}
+                                value={data.manufactureYear}
+                                onChangeText={(value) => updateData("manufactureYear", value)}
+                            />
+                            <TextField
+                                label="Model"
+                                placeholder="Masukkan model kendaraan"
+                                style={{ width: "100%" }}
+                                value={data.model}
+                                onChangeText={(value) => updateData("model", value)}
+                            />
+                            <TextField
+                                label="Nomor Polisi"
+                                placeholder="Masukkan nomor polisi"
+                                style={{ width: "100%" }}
+                                value={data.licensePlate}
+                                onChangeText={(value) => updateData("licensePlate", value)}
+                            />
+                            <SelectField
+                                label="Bahan Bakar"
+                                placeholder="Pilih jenis bahan bakar"
+                                value={data.fuelType}
+                                options={[
+                                    { label: "Bensin", value: "bensin" },
+                                    { label: "Diesel", value: "diesel" },
+                                    { label: "Listrik", value: "listrik" },
+                                    { label: "Hybrid", value: "hybrid" },
+                                ]}
+                                onValueChange={(value) => updateData("fuelType", value)}
+                            />
+                            <Button
+                                title="Simpan Profil"
+                                onPress={handleSaveProfile} />
                         </View>
                     </ScrollView>
                 </BlurTargetView>
@@ -61,13 +132,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 12,
-        // color: '#333',
     },
-    dummyFormArea: {
-        marginTop: 24,
-        padding: 20,
-        borderWidth: 1,
-        borderRadius: 12,
-        alignItems: 'center'
+    formArea: {
+        marginTop: 20,
+        gap: 16,
     }
 })

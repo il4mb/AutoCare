@@ -65,7 +65,7 @@ export function Text({ style, type = 'default', themeColor, ...rest }: TextProps
     return (
         <RNText
             // Gabungkan style yang sudah bersih dengan fontFamily hasil mapping
-            style={[cleanStyle, { fontFamily: resolvedFontFamily }]}
+            style={[cleanStyle, { fontFamily: resolvedFontFamily, includeFontPadding: false }]}
             {...rest}
         />
     );

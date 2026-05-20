@@ -1,15 +1,20 @@
-import { StyleSheet, View, Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "./Text";
 
+type Connection = {
+    name: string | null;
+    address: string | null;
+}
+
 interface ConnectionFieldProps {
-    deviceName?: string | null;
-    deviceAddress?: string | null;
+    name?: string;
+    address?: string;
     onPress: () => void;
 }
 
-export default function ConnectionField({ deviceName, deviceAddress, onPress }: ConnectionFieldProps) {
-    const isConnected = !!deviceAddress;
+export default function ConnectionPickerButton({ name, address, onPress }: ConnectionFieldProps) {
+    const isConnected = !!address;
 
     return (
         <Pressable
@@ -24,10 +29,10 @@ export default function ConnectionField({ deviceName, deviceAddress, onPress }: 
             </View>
             <View style={styles.textWrapper}>
                 <Text style={[styles.title, isConnected && styles.textWhite]}>
-                    {isConnected ? deviceName : "Koneksi Bluetooth"}
+                    {isConnected ? name : "Koneksi Bluetooth"}
                 </Text>
                 <Text style={[styles.subtitle, isConnected && styles.textWhite]}>
-                    {isConnected ? deviceAddress : "Ketuk untuk mencari atau input manual"}
+                    {isConnected ? address : "Ketuk untuk mencari atau input manual"}
                 </Text>
             </View>
             <MaterialCommunityIcons
