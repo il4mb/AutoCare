@@ -13,9 +13,10 @@ interface Props {
         showBackButton?: boolean;
         onGoBack?: () => void;
     }
+    applyInsets?: boolean; // Opsi untuk mengontrol apakah padding insets diterapkan pada konten
 }
 
-export default function ScreenLayout({ children, header }: Props) {
+export default function ScreenLayout({ children, header, applyInsets = false }: Props) {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
@@ -30,25 +31,34 @@ export default function ScreenLayout({ children, header }: Props) {
 
     return (
         <Fragment>
-            <View
-                style={[
-                    styles.header,
-                    {
-                        paddingTop: insets.top,
-                        height: 60 + insets.top,
-                        backgroundColor: colors.bg
-                    }
-                ]}>
-                {header?.showBackButton !== false && (
-                    <Pressable onPress={handleGoBack} style={styles.backButton}>
-                        <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
-                    </Pressable>
-                )}
-                <Text style={styles.headerTitle}>
-                    {header?.title || "Screen"}
-                </Text>
+            {header && (
+                <View
+                    style={[
+                        styles.header,
+                        {
+                            paddingTop: insets.top,
+                            height: 60 + insets.top,
+                            backgroundColor: colors.bg
+                        }
+                    ]}>
+                    {header?.showBackButton !== false && (
+                        <Pressable onPress={handleGoBack} style={styles.backButton}>
+                            <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+                        </Pressable>
+                    )}
+                    <Text style={styles.headerTitle}>
+                        {header?.title || "Screen"}
+                    </Text>
+                </View>
+            )}
+            <View style={{
+                flex: 1, backgroundColor: colors.bg,
+                paddingHorizontal: 16,
+                paddingBottom: applyInsets ? insets.bottom : 0,
+                paddingTop: applyInsets ? insets.top + 12 : 0,
+            }}>
+                {children}
             </View>
-            {children}
         </Fragment>
     );
 }

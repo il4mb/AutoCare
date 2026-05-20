@@ -23,7 +23,9 @@ export default function TabLayout() {
         ...DefaultTheme,
         colors: {
             ...DefaultTheme.colors,
-            ...Colors
+            ...Colors,
+            background: Colors.bg,
+            
         }
     }), []);
 

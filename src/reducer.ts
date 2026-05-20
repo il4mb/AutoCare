@@ -4,12 +4,18 @@ export const initialState: State = {
         // {
         //     id: '1',
         //     name: 'Honda Accord 2018',
-        //     engine: '2.0L I4'
+        //     year: 2018,
+        //     model: 'Accord',
+        //     licensePlate: 'B 1234 XYZ',
+        //     fuelType: 'Gasoline'
         // },
         // {
         //     id: '2',
         //     name: 'Toyota Camry 2020',
-        //     engine: '2.5L I4'
+        //     year: 2020,
+        //     model: 'Camry',
+        //     licensePlate: 'B 5678 ABC',
+        //     fuelType: 'Gasoline'
         // }
     ],
     selectedVehicle: '1'

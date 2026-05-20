@@ -14,8 +14,11 @@ declare global {
 
 type Vehicle = {
     id: string
-    engine: string
     name: string
+    year: number
+    model: string
+    licensePlate: string
+    fuelType: string
 }
 
 /** Global state of the editor */
