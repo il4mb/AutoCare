@@ -4,7 +4,6 @@ import BTClassic, { BluetoothDevice } from 'react-native-bluetooth-classic';
 import * as ExpoDevice from 'expo-device';
 
 export function useBluetooth() {
-
     const [connected, setConnected] = useState<BluetoothDevice[]>([]);
     const [pairedDevices, setPairedDevices] = useState<BluetoothDevice[]>([]);
     const [scannedDevices, setScannedDevices] = useState<BluetoothDevice[]>([]);
@@ -49,7 +48,6 @@ export function useBluetooth() {
     }, []);
 
     const startScan = useCallback(async () => {
-        // 1. Cegah double-click dari UI
         if (isScanningRef.current) return;
 
         try {
@@ -60,18 +58,15 @@ export function useBluetooth() {
             setIsScanning(true);
             isScanningRef.current = true;
 
-            await BTClassic.cancelDiscovery(); // Pastikan tidak ada sesi discovery lain yang berjalan
+            await BTClassic.cancelDiscovery();
             const discovered = await BTClassic.startDiscovery();
             setScannedDevices(discovered);
 
         } catch (error: any) {
-            // 2. Tangkap error spesifik jika OS sudah dalam mode discovery
             const errorMessage = error?.message?.toLowerCase() || '';
             if (errorMessage.includes('already in discovery mode') || errorMessage.includes('discovering')) {
-                console.log("Sistem sedang scan. Membatalkan sesi sebelumnya untuk memulai yang baru...");
                 try {
                     await BTClassic.cancelDiscovery();
-                    // Coba eksekusi ulang setelah dibatalkan
                     const discovered = await BTClassic.startDiscovery();
                     setScannedDevices(discovered);
                 } catch (retryError) {
@@ -92,7 +87,6 @@ export function useBluetooth() {
         try {
             await BTClassic.cancelDiscovery();
         } catch (error: any) {
-            // Abaikan error jika ternyata memang tidak sedang melakukan discovery
             console.log("Berhenti pemindaian:", error?.message);
         } finally {
             setIsScanning(false);
@@ -100,33 +94,60 @@ export function useBluetooth() {
         }
     }, []);
 
-    // Bersihkan sesi scan saat komponen di unmount/keluar dari layar
-    useEffect(() => {
-        const getConnectedDevices = async () => {
-            try {
-                const connectedDevices = await BTClassic.getConnectedDevices();
-                console.log("Perangkat yang terhubung saat ini:", connectedDevices);
-                setConnected(connectedDevices);
-            } catch (error) {
-                console.error("Gagal mengambil perangkat yang terhubung:", error);
-            }
+    // ---------------------------------------------------------
+    // 1. EFFECT KHUSUS UNTUK LISTENER KONEKSI & STATUS
+    // ---------------------------------------------------------
+    const refreshConnectedDevices = useCallback(async () => {
+        try {
+            const connectedDevices = await BTClassic.getConnectedDevices();
+            setConnected(connectedDevices);
+        } catch (error) {
+            console.error("Gagal mengambil perangkat yang terhubung:", error);
         }
-        getConnectedDevices();
+    }, []);
 
-        const subscriptions = [
-            BTClassic.onDeviceConnected(() => getConnectedDevices()),
-            BTClassic.onDeviceDisconnected(() => getConnectedDevices()),
-            BTClassic.onStateChanged((state) => {
-                console.log("Status Bluetooth berubah:", state);
-                // Perbarui daftar perangkat terhubung saat status Bluetooth berubah
-                getConnectedDevices();
-            }),
-        ];
+    useEffect(() => {
+        // Ambil data pertama kali saat komponen mount
+        refreshConnectedDevices();
+
+        const connectSub = BTClassic.onDeviceConnected((event) => {
+            console.log("Terhubung dengan perangkat:", event.device.name || event.device.address);
+            refreshConnectedDevices();
+        });
+
+        const disconnectSub = BTClassic.onDeviceDisconnected((event) => {
+            console.log("Terputus dari perangkat:", event.device.name || event.device.address);
+            // Anda juga bisa melakukan state update manual: 
+            // setConnected(prev => prev.filter(d => d.address !== event.device.address));
+            refreshConnectedDevices();
+        });
+
+        const stateSub = BTClassic.onStateChanged((state) => {
+            console.log("Status Bluetooth berubah:", state.enabled);
+            if (state.enabled) {
+                refreshConnectedDevices();
+            } else {
+                // Jika Bluetooth mati, kosongkan state connected
+                setConnected([]);
+            }
+        });
 
         return () => {
-            BTClassic.cancelDiscovery().catch(() => { });
-            subscriptions.forEach(sub => sub.remove());
-        }
+            connectSub.remove();
+            disconnectSub.remove();
+            stateSub.remove();
+        };
+    }, [refreshConnectedDevices]);
+
+    // ---------------------------------------------------------
+    // 2. EFFECT KHUSUS UNTUK CLEANUP DISCOVERY SAAT UNMOUNT
+    // ---------------------------------------------------------
+    useEffect(() => {
+        return () => {
+            if (isScanningRef.current) {
+                BTClassic.cancelDiscovery().catch(() => { });
+            }
+        };
     }, []);
 
     return {
@@ -138,5 +159,7 @@ export function useBluetooth() {
         fetchPairedDevices,
         startScan,
         stopScan,
+        // Optional: Anda bisa mengekspos fungsi ini jika ingin memanggilnya manual setelah connect di UI
+        refreshConnectedDevices,
     };
 }
