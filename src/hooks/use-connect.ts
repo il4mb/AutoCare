@@ -6,8 +6,11 @@ export const useConnect = (address: string) => {
     const [connected, setConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Array untuk menampung semua subscription agar mudah di-cleanup
-    const subscriptionsRef = useRef<any[]>([]);
+    // Menyimpan fungsi callback JS dari UI (Bisa diisi kapan saja, bahkan sebelum connect)
+    const readCallbacksRef = useRef<Set<(data: string) => void>>(new Set());
+
+    // Menyimpan 1 listener native bawaan library
+    const nativeReadSubscriptionRef = useRef<any>(null);
 
     const disconnect = useCallback(async () => {
         if (!address) return;
@@ -15,7 +18,7 @@ export const useConnect = (address: string) => {
         setError(null);
         try {
             await ClassicBT.disconnectFromDevice(address);
-            setConnected(false);
+            setConnected(false); // Ini akan memicu cleanup pada Effect 1
         } catch (err) {
             setError("Gagal memutuskan koneksi");
         } finally {
@@ -43,7 +46,10 @@ export const useConnect = (address: string) => {
     }, [address]);
 
     const write = async (data: string) => {
-        if (!connected) throw new Error("Perangkat belum terhubung");
+        if (!connected) {
+            console.warn("Tidak dapat mengirim data: Perangkat tidak terhubung");
+            return;
+        }
         try {
             await ClassicBT.writeToDevice(address, data);
         } catch (err) {
@@ -51,26 +57,46 @@ export const useConnect = (address: string) => {
         }
     };
 
-    // Fungsi khusus untuk mendengarkan data masuk dari sensor/OBD
+    // Fungsi untuk UI mendengarkan data. 
+    // Aman dipanggil di useEffect UI kapan pun tanpa error native.
     const onDataReceived = useCallback((callback: (data: string) => void) => {
-        // Gunakan onDeviceRead bawaan library
-        const subscription = ClassicBT.onDeviceRead(address, (event) => {
-            callback(event.data);
-        });
+        // Simpan callback ke dalam memori
+        readCallbacksRef.current.add(callback);
 
-        subscriptionsRef.current.push(subscription);
-
-        // Return fungsi untuk unsubscribe manual jika dibutuhkan
+        // Return fungsi cleanup untuk UI (unsubscribe)
         return () => {
-            subscription.remove();
-            subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub !== subscription);
+            readCallbacksRef.current.delete(callback);
         };
-    }, [address]);
+    }, []);
 
-    // Effect utama untuk Cek Koneksi Awal, Auto-Connect, dan Monitor Disconnect
+    // ------------------------------------------------------------------
+    // EFFECT 1: BIND & UNBIND NATIVE LISTENER SECARA OTOMATIS
+    // ------------------------------------------------------------------
+    useEffect(() => {
+        // Jika sedang terhubung, jalankan Native Listener
+        if (connected && address) {
+            nativeReadSubscriptionRef.current = ClassicBT.onDeviceRead(address, (event) => {
+                // Teruskan data yang masuk ke semua fungsi yang tersimpan di memori
+                readCallbacksRef.current.forEach((cb) => cb(event.data));
+            });
+        }
+
+        // Cleanup: Jika disconnect (connected berubah false) atau komponen unmount
+        return () => {
+            if (nativeReadSubscriptionRef.current) {
+                nativeReadSubscriptionRef.current.remove();
+                nativeReadSubscriptionRef.current = null;
+            }
+        };
+    }, [connected, address]);
+
+    // ------------------------------------------------------------------
+    // EFFECT 2: CEK KONEKSI AWAL & MONITOR SYSTEM DISCONNECT
+    // ------------------------------------------------------------------
     useEffect(() => {
         if (!address) return;
         let isMounted = true;
+        let disconnectSub: any = null;
 
         const checkConnection = async () => {
             try {
@@ -89,23 +115,22 @@ export const useConnect = (address: string) => {
 
         checkConnection();
 
-        // Dengarkan jika perangkat tiba-tiba terputus (misal: alat dimatikan)
-        const disconnectSub = ClassicBT.onDeviceDisconnected((event) => {
+        // Dengarkan jika perangkat tiba-tiba terputus (contoh: alat mati / hilang sinyal)
+        disconnectSub = ClassicBT.onDeviceDisconnected((event) => {
             if (event.device.address === address && isMounted) {
                 setConnected(false);
             }
         });
-        subscriptionsRef.current.push(disconnectSub);
 
-        // CLEANUP: Dipanggil HANYA saat komponen unmount atau address berubah
         return () => {
             isMounted = false;
 
-            // 1. Hapus semua listener/subscription agar tidak memory leak
-            subscriptionsRef.current.forEach(sub => sub.remove());
-            subscriptionsRef.current = [];
+            // Hapus listener pemantau disconnect sistem
+            if (disconnectSub) {
+                disconnectSub.remove();
+            }
 
-            // 2. Putuskan koneksi dari perangkat (Pastikan Anda memang ingin putus saat keluar layar)
+            // Putuskan koneksi native sepenuhnya saat keluar dari layar
             ClassicBT.disconnectFromDevice(address).catch(() => { });
         };
     }, [address, connect]);
