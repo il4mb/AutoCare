@@ -11,6 +11,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { parseODBResponse } from "@/parser";
 import VehicleBrandSelect from "@/components/VehicleBrandSelect";
 import { BlurTargetView, BlurView } from "expo-blur";
+import { createDiagnoseByCodeAndModel } from "@/services/DiagnoseService";
+import { useApp } from "@/contexts/AppProvider";
 
 type ConnectParams = {
     name: string;
@@ -19,6 +21,7 @@ type ConnectParams = {
 
 export default function ConnectScreen() {
 
+    const { auth } = useApp();
     const { name, address } = useLocalSearchParams<ConnectParams>();
     const router = useRouter();
     const connect = useConnect(address);
@@ -40,7 +43,7 @@ export default function ConnectScreen() {
 
     const sendTestData = useCallback(async () => {
 
-        if (!connect.connected) return;
+        if (!connect.connected || !auth?.id) return;
         setIsDiagnosing(true);
 
         try {
@@ -63,18 +66,20 @@ export default function ConnectScreen() {
 
             console.log("✅ Semua data inisialisasi berhasil diproses!");
             console.log("DTC:", parseODBResponse(rawCode));
-            router.push(`/diagnose/result?dtc=${encodeURIComponent(JSON.stringify(dtcCodes))}&model=${encodeURIComponent(model || "")}`);
+            const diagnose = await createDiagnoseByCodeAndModel(dtcCodes, model, auth.id);
+            if(!diagnose) {
+                console.warn("⚠️ Diagnosa gagal dibuat, tetapi kode DTC ditemukan. Menampilkan hasil DTC mentah.");
+                setShowDTCNotFound(true);
+                return;
+            }
+            router.push(`/diagnose/result?id=${diagnose.id}`);
 
         } catch (error: any) {
-
             console.error("❌ Proses terhenti:", error.message);
-
         } finally {
-
             setIsDiagnosing(false);
-
         }
-    }, [connect, address]);
+    }, [connect, address, auth?.id]);
 
     const goBack = useCallback(async () => {
         await handleDisconnect();
@@ -224,7 +229,6 @@ export default function ConnectScreen() {
                     />
                 </View>
             </BlurTargetView>
-
             <Modal
                 visible={showDTCNotFound}
                 onRequestClose={() => setShowDTCNotFound(false)}
