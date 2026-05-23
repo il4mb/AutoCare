@@ -20,7 +20,7 @@ export const insertDiagnose = async (data: DiagnosePayload) => {
         return await db.write(async () => {
             return await collection.create((diagnose) => {
                 diagnose.uid = data.uid;
-                diagnose.codes = data.codes.sort((a, b) => a.localeCompare(b)).join(","); // Simpan sebagai string yang dipisahkan koma
+                diagnose.codes = data.codes.sort().join(","); // Simpan sebagai string yang dipisahkan koma
                 diagnose.description = data.description;
                 diagnose.symptoms = data.symptoms;
                 diagnose.causes = data.causes;
@@ -65,6 +65,8 @@ export const createDiagnoseByCodeAndModel = async (codes: string[], modelId: str
     }
     const diagnoseData = response.data.data;
     const modelData = response.data.model;
+
+    console.log("Diagnose data received from API:", diagnoseData);
 
     const diagnosePayload: DiagnosePayload = {
         uid: uid,

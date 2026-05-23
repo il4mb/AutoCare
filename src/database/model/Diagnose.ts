@@ -1,5 +1,5 @@
 import { Model } from "@nozbe/watermelondb";
-import { field, date, text, json } from "@nozbe/watermelondb/decorators";
+import { date, field, json, text } from "@nozbe/watermelondb/decorators";
 
 export class Diagnose extends Model {
     static table = "diagnoses";
@@ -13,7 +13,7 @@ export class Diagnose extends Model {
         name: string;
     } | null
 
-    @json("codes", (value) => typeof value === "string" ? value.split(",") : value)
+    @text("codes")
     codes!: string
 
     @json("description", (value) => typeof value === "string" ? JSON.parse(value) : value)

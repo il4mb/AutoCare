@@ -95,6 +95,11 @@ export default function Profile() {
                 {/* Tombol Logout */}
                 <View style={styles.footerContainer}>
                     <Button 
+                        title="Edit Profil" 
+                        onPress={() => router.push("/edit-profile")} 
+                        style={styles.editButton}
+                    />
+                    <Button 
                         title="Keluar Akun" 
                         onPress={confirmLogout} 
                         style={styles.logoutButton}
@@ -226,5 +231,11 @@ const styles = StyleSheet.create({
         backgroundColor: "#f08d8d", // Red 100
         borderColor: "#a33636",
         borderWidth: 1,
-    }
+    },
+    editButton: {
+        backgroundColor: "#2f6cb8", // Blue 200
+        borderColor: "#3b82f6",
+        borderWidth: 1,
+        marginBottom: 12,
+    },
 });

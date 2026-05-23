@@ -72,7 +72,7 @@ export default function ConnectScreen() {
                 setShowDTCNotFound(true);
                 return;
             }
-            router.push(`/diagnose/result?id=${diagnose.id}`);
+            router.dismissTo(`/diagnose/result?id=${diagnose.id}`);
 
         } catch (error: any) {
             console.error("❌ Proses terhenti:", error.message);

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Print from 'expo-print'; // Import expo-print
 
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
@@ -16,6 +17,7 @@ export default function ResultScreen() {
     const [diagnose, setDiagnose] = useState<Diagnose | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isPrinting, setIsPrinting] = useState(false);
 
     // 1. Observer WatermelonDB
     useEffect(() => {
@@ -52,10 +54,91 @@ export default function ResultScreen() {
 
         return {
             allCodes: parsedCodes,
-            knownCodes: parsedCodes.filter(code => dict[code]), // Kode yang ada deskripsinya
-            unknownCodes: parsedCodes.filter(code => !dict[code]) // Kode yang tidak ada deskripsinya
+            knownCodes: parsedCodes.filter(code => dict[code]),
+            unknownCodes: parsedCodes.filter(code => !dict[code])
         };
     }, [diagnose]);
+
+    // --- LOGIKA PRINT PDF ---
+    const handlePrintPDF = async () => {
+        if (!diagnose) return;
+        setIsPrinting(true);
+
+        try {
+            // Membuat template HTML untuk PDF
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Laporan Diagnosa Kendaraan</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+                    .header { text-align: center; border-bottom: 2px solid #0252ff; padding-bottom: 20px; margin-bottom: 30px; }
+                    .header h1 { margin: 0; color: #0f172a; font-size: 28px; }
+                    .header p { margin: 5px 0 0 0; color: #64748b; font-size: 14px; }
+                    .card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; }
+                    .code-badge { display: inline-block; background-color: #fee2e2; color: #b91c1c; padding: 5px 12px; border-radius: 6px; font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+                    .desc { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 15px; }
+                    .section { margin-bottom: 10px; }
+                    .section-title { font-size: 12px; text-transform: uppercase; font-weight: bold; color: #64748b; margin-bottom: 4px; }
+                    .section-content { font-size: 14px; margin: 0; color: #475569; }
+                    .unknown-section { background-color: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Laporan Diagnosa AutoCare</h1>
+                    <p>ID Referensi: ${diagnose.id}</p>
+                    <p>Tanggal: ${new Date(diagnose.createdAt).toLocaleString('id-ID')}</p>
+                </div>
+
+                ${knownCodes.map(code => `
+                    <div class="card">
+                        <div class="code-badge">DTC: ${code}</div>
+                        <div class="desc">${diagnose?.description?.[code] || '-'}</div>
+                        
+                        ${diagnose?.symptoms?.[code] ? `
+                        <div class="section">
+                            <div class="section-title">Gejala yang Timbul</div>
+                            <p class="section-content">${diagnose.symptoms[code]}</p>
+                        </div>` : ''}
+                        
+                        ${diagnose?.causes?.[code] ? `
+                        <div class="section">
+                            <div class="section-title">Kemungkinan Penyebab</div>
+                            <p class="section-content">${diagnose.causes[code]}</p>
+                        </div>` : ''}
+                        
+                        ${diagnose?.solutions?.[code] ? `
+                        <div class="section">
+                            <div class="section-title">Solusi / Perbaikan</div>
+                            <p class="section-content">${diagnose.solutions[code]}</p>
+                        </div>` : ''}
+                    </div>
+                `).join('')}
+
+                ${unknownCodes.length > 0 ? `
+                    <div class="unknown-section">
+                        <strong>Informasi Tambahan:</strong> Terdapat kode lain yang terdeteksi namun belum terdaftar di database kami: 
+                        <span style="color: #d97706; font-weight: bold;">${unknownCodes.join(', ')}</span>
+                    </div>
+                ` : ''}
+            </body>
+            </html>
+            `;
+
+            // Eksekusi fungsi print (akan memunculkan dialog native PDF iOS/Android)
+            await Print.printAsync({ html: htmlContent });
+            
+        } catch (err) {
+            console.error("Gagal membuat PDF:", err);
+            Alert.alert("Gagal", "Terjadi kesalahan saat membuat dokumen PDF.");
+        } finally {
+            setIsPrinting(false);
+        }
+    };
 
     // --- HELPER UNTUK RENDER LIST ---
     const renderListSection = (title: string, icon: keyof typeof MaterialCommunityIcons.glyphMap, content: string | undefined, color: string) => {
@@ -104,7 +187,7 @@ export default function ResultScreen() {
         );
     }
 
-    // --- STATUS 3: KENDARAAN SEHAT (0 Kode Terdeteksi) ---
+    // --- STATUS 3: KENDARAAN SEHAT ---
     if (allCodes.length === 0) {
         return (
             <ScreenLayout applyInsets style={styles.container}>
@@ -168,8 +251,6 @@ export default function ResultScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-                {/* List Kartu Diagnosa yang Dikenali */}
                 {knownCodes.map((code) => {
                     const desc = diagnose?.description?.[code];
                     const symptom = diagnose?.symptoms?.[code];
@@ -195,7 +276,6 @@ export default function ResultScreen() {
                     );
                 })}
 
-                {/* Kartu Khusus Partial Match (Ada kode ekstra yang tidak dikenali) */}
                 {unknownCodes.length > 0 && (
                     <View style={styles.unknownCard}>
                         <View style={styles.unknownCardHeader}>
@@ -221,11 +301,29 @@ export default function ResultScreen() {
                     style={styles.finishButton}
                 />
             </ScrollView>
+
+            {/* FLOATING ACTION BUTTON (PRINT PDF) */}
+            <Pressable 
+                style={({ pressed }) => [
+                    styles.fab, 
+                    pressed && styles.fabPressed,
+                    isPrinting && styles.fabDisabled
+                ]}
+                onPress={handlePrintPDF}
+                disabled={isPrinting}
+            >
+                {isPrinting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                    <MaterialCommunityIcons name="printer" size={28} color="#ffffff" />
+                )}
+            </Pressable>
+            
         </ScreenLayout>
     );
 }
 
-// --- STYLES SAMA SEPERTI SEBELUMNYA ---
+// --- STYLES ---
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#f1f5f9" },
     centerContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
@@ -251,7 +349,7 @@ const styles = StyleSheet.create({
     header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
     headerTitle: { fontSize: 28, color: "#0f172a", marginBottom: 4 },
     headerSubtitle: { color: "#ef4444", fontSize: 15, fontWeight: "500" },
-    scrollContent: { paddingHorizontal: 20, paddingBottom: 40, gap: 20 },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 100, gap: 20 }, // paddingBottom diubah ke 100 agar scroll tidak tertutup FAB
 
     card: { backgroundColor: "#ffffff", borderRadius: 20, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
     cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
@@ -272,5 +370,32 @@ const styles = StyleSheet.create({
     bulletPoint: { width: 6, height: 6, borderRadius: 3, marginTop: 7, marginRight: 12 },
     bulletText: { color: "#475569", fontSize: 14, lineHeight: 20, flex: 1 },
 
-    finishButton: { marginTop: 12, marginBottom: 20 }
+    finishButton: { marginTop: 12, marginBottom: 20 },
+
+    // --- FAB STYLES ---
+    fab: {
+        position: "absolute",
+        bottom: 24,
+        right: 24,
+        backgroundColor: "#0252ff", // Warna primary aplikasi
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    fabPressed: {
+        transform: [{ scale: 0.95 }],
+        backgroundColor: "#0040cc",
+    },
+    fabDisabled: {
+        backgroundColor: "#94a3b8",
+        elevation: 0,
+        shadowOpacity: 0,
+    }
 });

@@ -6,6 +6,7 @@ export default function Layout() {
             <Stack.Screen name="home" />
             <Stack.Screen name="create-diagnose" />
             <Stack.Screen name="profile" />
+            <Stack.Screen name="edit-profile" />
         </Stack>
     )
 }
