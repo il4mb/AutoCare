@@ -25,7 +25,7 @@ export default function TabLayout() {
             ...DefaultTheme.colors,
             ...Colors,
             background: Colors.bg,
-            
+
         }
     }), []);
 
@@ -33,6 +33,8 @@ export default function TabLayout() {
         <ThemeProvider value={theme}>
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(root)" />
+                <Stack.Screen name="sign-up" />
+                <Stack.Screen name="sign-in" />
             </Stack>
             <StatusBar barStyle={"dark-content"} />
         </ThemeProvider>

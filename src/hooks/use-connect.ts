@@ -1,14 +1,74 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import ClassicBT from "react-native-bluetooth-classic";
 
+export type CommandLog = {
+    id: string;
+    type: 'TX' | 'RX'; // TX = Pengiriman (Transmit), RX = Balasan (Receive)
+    data: string;
+    timestamp: Date;
+};
+
 export const useConnect = (address: string) => {
+    // --- STATES ---
     const [connecting, setConnecting] = useState(false);
     const [connected, setConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [commandLogs, setCommandLogs] = useState<CommandLog[]>([]); // State baru untuk log
 
+    // --- REFS ---
     const readCallbacksRef = useRef<Set<(data: string) => void>>(new Set());
     const nativeReadSubscriptionRef = useRef<any>(null);
     const disconnectTimeoutRef = useRef<number | null>(null);
+
+    // --- HELPER: LOGGING ---
+    const addLog = useCallback((type: 'TX' | 'RX', data: string) => {
+        setCommandLogs((prev) => [
+            ...prev,
+            { id: `${Date.now()}-${Math.random()}`, type, data, timestamp: new Date() }
+        ]);
+    }, []);
+
+    const clearLogs = useCallback(() => {
+        setCommandLogs([]);
+    }, []);
+
+    // --- CORE BLUETOOTH FUNCTIONS ---
+    const connect = useCallback(async () => {
+        if (!address) return;
+
+        // Batalkan jika kebetulan ada proses disconnect yang tertunda (Fast Refresh safety)
+        if (disconnectTimeoutRef.current) {
+            clearTimeout(disconnectTimeoutRef.current);
+            disconnectTimeoutRef.current = null;
+        }
+
+        setConnecting(true);
+        setError(null);
+        try {
+            const isAlreadyConnected = await ClassicBT.isDeviceConnected(address);
+            if (isAlreadyConnected) {
+                setConnected(true);
+                return;
+            }
+
+            const device = await ClassicBT.connectToDevice(address, {
+                delimiter: '>', // Sangat krusial untuk ELM327
+                readTimeout: 10000,
+            });
+
+            const isConnected = await device.isConnected();
+            setConnected(isConnected);
+
+            if (!isConnected) {
+                setError("Gagal terhubung ke perangkat");
+            }
+        } catch (err) {
+            setError("Gagal terhubung ke perangkat");
+            setConnected(false);
+        } finally {
+            setConnecting(false);
+        }
+    }, [address]);
 
     const disconnect = useCallback(async () => {
         if (!address) return;
@@ -24,50 +84,53 @@ export const useConnect = (address: string) => {
         }
     }, [address]);
 
-    const connect = useCallback(async () => {
-        if (!address) return;
-
-        // Batalkan jika kebetulan ada proses disconnect yang tertunda (Fast Refresh safety)
-        if (disconnectTimeoutRef.current) {
-            clearTimeout(disconnectTimeoutRef.current);
-            disconnectTimeoutRef.current = null;
-        }
-
-        setConnecting(true);
-        setError(null);
-        try {
-            // Cek dulu apakah sebenarnya sudah terkoneksi dari sesi sebelum fast-refresh
-            const isAlreadyConnected = await ClassicBT.isDeviceConnected(address);
-            if (isAlreadyConnected) {
-                setConnected(true);
-                return;
-            }
-
-            const device = await ClassicBT.connectToDevice(address);
-            const isConnected = await device.isConnected();
-            setConnected(isConnected);
-
-            if (!isConnected) {
-                setError("Gagal terhubung ke perangkat");
-            }
-        } catch (err) {
-            setError("Gagal terhubung ke perangkat");
-            setConnected(false);
-        } finally {
-            setConnecting(false);
-        }
-    }, [address]);
-
     const write = async (data: string) => {
         if (!connected) {
             console.warn("Tidak dapat mengirim data: Perangkat tidak terhubung");
             return;
         }
         try {
-            await ClassicBT.writeToDevice(address, data);
+            const command = data.endsWith('\r') ? data : data + '\r';
+
+            addLog('TX', data); // Catat ke UI State (tanpa \r agar rapi)
+            await ClassicBT.writeToDevice(address, command, 'ascii');
+
+            console.log("Data berhasil dikirim ke perangkat:", data);
         } catch (err) {
-            throw new Error("Gagal mengirim data ke perangkat");
+            console.error("Gagal mengirim data:", err);
+            addLog('TX', `[ERROR] Gagal mengirim: ${data}`);
         }
+    };
+
+    // Fungsi cerdas berbasis Promise untuk Tanya & Tunggu balasan
+    const request = (command: string, timeoutMs: number = 5000): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            if (!connected) {
+                return reject(new Error("Perangkat tidak terhubung"));
+            }
+
+            const timeout = setTimeout(() => {
+                readCallbacksRef.current.delete(handler);
+                reject(new Error(`Timeout: Tidak ada balasan untuk perintah ${command}`));
+            }, timeoutMs);
+
+            const handler = (data: string) => {
+                clearTimeout(timeout);
+                readCallbacksRef.current.delete(handler);
+                resolve(data);
+            };
+
+            readCallbacksRef.current.add(handler);
+
+            const finalCommand = command.endsWith('\r') ? command : command + '\r';
+
+            addLog('TX', command); // Catat ke UI State
+            ClassicBT.writeToDevice(address, finalCommand, 'ascii').catch((err) => {
+                clearTimeout(timeout);
+                readCallbacksRef.current.delete(handler);
+                reject(err);
+            });
+        });
     };
 
     const onDataReceived = useCallback((callback: (data: string) => void) => {
@@ -81,17 +144,32 @@ export const useConnect = (address: string) => {
     // EFFECT 1: BIND & UNBIND NATIVE LISTENER
     // ------------------------------------------------------------------
     useEffect(() => {
-        // Hapus listener lama jika ada (mencegah duplikasi saat fast refresh)
         if (nativeReadSubscriptionRef.current) {
             nativeReadSubscriptionRef.current.remove();
             nativeReadSubscriptionRef.current = null;
         }
 
-        if (connected && address) {
+        const bindNativeListener = async () => {
+            const isConnected = await ClassicBT.isDeviceConnected(address);
+            if (!isConnected) return;
+
+            console.log("Binding listener untuk perangkat:", address);
+
             nativeReadSubscriptionRef.current = ClassicBT.onDeviceRead(address, (event) => {
-                readCallbacksRef.current.forEach((cb) => cb(event.data));
+                // Bersihkan karakter \r dan \n 
+                const cleanData = event.data.replace(/[\r\n]+/g, ' ').trim();
+
+                if (!cleanData) return;
+
+                console.log(`[OBD] Balasan: ${cleanData}`);
+                addLog('RX', cleanData); // Catat balasan ke UI State
+
+                // Teruskan data ke subscriber (termasuk fungsi request)
+                readCallbacksRef.current.forEach((cb) => cb(cleanData));
             });
         }
+
+        bindNativeListener();
 
         return () => {
             if (nativeReadSubscriptionRef.current) {
@@ -99,7 +177,7 @@ export const useConnect = (address: string) => {
                 nativeReadSubscriptionRef.current = null;
             }
         };
-    }, [connected, address]);
+    }, [connected, address, addLog]);
 
     // ------------------------------------------------------------------
     // EFFECT 2: CEK KONEKSI AWAL & MONITOR SYSTEM DISCONNECT
@@ -129,25 +207,31 @@ export const useConnect = (address: string) => {
         disconnectSub = ClassicBT.onDeviceDisconnected((event) => {
             if (event.device.address === address && isMounted) {
                 setConnected(false);
+                addLog('RX', '[SYSTEM] Perangkat Terputus');
             }
         });
 
         return () => {
             isMounted = false;
+            if (disconnectSub) disconnectSub.remove();
 
-            if (disconnectSub) {
-                disconnectSub.remove();
-            }
-
-            // --- FAST REFRESH PROTECTION ---
-            // Jangan langsung disconnect. Beri jeda 500ms. 
-            // Jika ini adalah fast-refresh, komponen akan termount lagi sebelum 500ms
-            // dan timeout ini akan dibatalkan di dalam fungsi `connect()`.
+            // Fast Refresh Protection: Beri jeda 500ms sebelum disconnect native
             disconnectTimeoutRef.current = setTimeout(() => {
                 ClassicBT.disconnectFromDevice(address).catch(() => { });
             }, 500);
         };
-    }, [address, connect]);
+    }, [address, connect, addLog]);
 
-    return { connecting, connected, error, connect, disconnect, write, onDataReceived };
+    return {
+        connecting,
+        connected,
+        error,
+        commandLogs,
+        connect,
+        disconnect,
+        write,
+        request,
+        onDataReceived,
+        clearLogs
+    };
 };

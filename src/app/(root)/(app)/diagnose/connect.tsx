@@ -1,14 +1,17 @@
 import ClassicBT, { BluetoothDevice } from "react-native-bluetooth-classic";
 import ScreenLayout from "@/components/ScreenLayout";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useConnect } from "@/hooks/use-connect";
 import { Text } from "@/components/Text";
 import ConnectionBadge from "@/components/ConnectionBadge";
 import { Button } from "@/components/Button";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SelectField } from "@/components/SelectField";
+import { VEHICLE_MODELS } from "@/constants/vehicles-models";
+import { parseODBResponse } from "@/parser";
+import VehicleBrandSelect from "@/components/VehicleBrandSelect";
 
 type ConnectParams = {
     name: string;
@@ -16,10 +19,15 @@ type ConnectParams = {
 }
 
 export default function Connect() {
-
     const { name, address } = useLocalSearchParams<ConnectParams>();
     const router = useRouter();
     const connect = useConnect(address);
+
+    // Ref untuk scroll view terminal
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // State untuk mengunci tombol saat inisialisasi berjalan
+    const [isDiagnosing, setIsDiagnosing] = useState(false);
 
     const handleConnect = useCallback(async () => {
         if (connect.connected || connect.connecting) return;
@@ -31,23 +39,33 @@ export default function Connect() {
         await connect.disconnect();
     }, [connect]);
 
-
     const sendTestData = useCallback(async () => {
         if (!connect.connected) return;
+        setIsDiagnosing(true); // Mulai loading
         try {
-            await connect.write("ATZ\n");
-            await connect.write("ATE0\n");
-            await connect.write("ATL0\n");
-            await connect.write("ATSP0\n");
-            await connect.write("0100\n");
-            await connect.write("03\r\n");
-            console.log("Data berhasil dikirim ke perangkat.");
-        } catch (error) {
-            console.error("Gagal mengirim data:", error);
-        }
-    }, [connect]);
+            console.log("Memulai Inisialisasi...");
 
-    // Pastikan parameter name dan address tersedia, jika tidak kembali ke halaman sebelumnya
+            // Pancing buffer jika ada data nyangkut
+            await ClassicBT.readFromDevice(address).catch(() => { });
+
+            // Menggunakan request: Kode akan MENUNGGU balasan sebelum lanjut ke baris berikutnya
+            await connect.request("ATZ");
+            await connect.request("ATE0");
+            await connect.request("ATL0");
+            await connect.request("ATSP0");
+            await connect.request("0100");
+            const DTC = await connect.request("03");
+
+            console.log("✅ Semua data inisialisasi berhasil diproses!");
+            console.log("DTC:", parseODBResponse(DTC));
+        } catch (error: any) {
+            console.error("❌ Proses terhenti:", error.message);
+        } finally {
+            setIsDiagnosing(false); // Selesai loading
+        }
+    }, [connect, address]);
+
+    // Pastikan parameter name dan address tersedia
     useEffect(() => {
         if (!name || !address) {
             router.back();
@@ -55,16 +73,7 @@ export default function Connect() {
         }
     }, [name, address, router]);
 
-
-    useEffect(() => {
-        return connect.onDataReceived((data) => {
-            console.log("Data diterima dari perangkat:", data);
-        });
-    }, [connect.connected]);
-
-
-
-    // Fungsi render untuk status card agar kode lebih rapi
+    // Fungsi render untuk status card
     const renderStatusContent = () => {
         if (connect.connecting) {
             return (
@@ -94,14 +103,16 @@ export default function Connect() {
 
         if (connect.connected) {
             return (
-                <View style={styles.statusInner}>
-                    <View style={[styles.iconCircle, styles.iconCircleSuccess]}>
-                        <MaterialCommunityIcons name="check-circle" size={32} color="#10b981" />
+                <View style={[styles.statusInner, styles.statusInnerCompact]}>
+                    <View style={[styles.iconCircle, styles.iconCircleSuccess, styles.iconCircleCompact]}>
+                        <MaterialCommunityIcons name="check-circle" size={24} color="#10b981" />
                     </View>
-                    <Text type="subtitle" style={styles.statusTitle}>Terhubung!</Text>
-                    <Text type="small" style={styles.statusDesc}>
-                        Perangkat {name} siap digunakan.
-                    </Text>
+                    <View style={styles.compactTextContainer}>
+                        <Text type="subtitle" style={styles.statusTitleCompact}>Terhubung!</Text>
+                        <Text type="small" style={styles.statusDescCompact}>
+                            Perangkat siap digunakan.
+                        </Text>
+                    </View>
                 </View>
             );
         }
@@ -123,7 +134,7 @@ export default function Connect() {
         <ScreenLayout applyInsets style={styles.container}>
             <View style={styles.content}>
 
-                {/* Komponen Bawaan Anda */}
+                {/* Badge Koneksi */}
                 <ConnectionBadge
                     name={name}
                     address={address}
@@ -134,31 +145,67 @@ export default function Connect() {
                     onDisconnect={handleDisconnect}
                 />
 
-                {/* Status Card */}
-                <View style={styles.statusCard}>
+                <View style={{ marginTop: 24 }}>
+                    <VehicleBrandSelect />
+                </View>
+
+
+                {/* Status Card (Mengecil jika terhubung) */}
+                <View style={[styles.statusCard, connect.connected && styles.statusCardCompact]}>
                     {renderStatusContent()}
                 </View>
 
+                {/* Area Kontrol Diagnosa & Terminal */}
                 {connect.connected && (
-                    <SelectField
-                        label="Pilih Mode Diagnosa"
-                        options={[
-                            { label: "Diagnosa Lengkap", value: "full" },
-                            { label: "Diagnosa Cepat", value: "quick" },
-                        ]}
-                        onValueChange={(value) => {
-                            console.log("Mode Diagnosa Dipilih:", value);
-                        }}
-                    />
-                )}
+                    <View style={styles.diagnosticsContainer}>
 
+                        {/* <SelectField
+                            label="Pilih Model Kendaraan"
+                            options={VEHICLE_MODELS.map((model, i) => ({ label: `${model.brand} ${model.model}`, value: i }))}
+                            onValueChange={(value) => {
+                                console.log("Model Dipilih:", value);
+                            }}
+                        /> */}
+
+                        {/* Terminal UI */}
+                        <View style={styles.terminalContainer}>
+                            <View style={styles.terminalHeader}>
+                                <Text style={styles.terminalTitle}>OBD-II Console</Text>
+                                <View style={styles.terminalDots}>
+                                    <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
+                                    <View style={[styles.dot, { backgroundColor: '#eab308' }]} />
+                                    <View style={[styles.dot, { backgroundColor: '#22c55e' }]} />
+                                </View>
+                            </View>
+
+                            <ScrollView
+                                ref={scrollViewRef}
+                                style={styles.terminalScroll}
+                                contentContainerStyle={{ paddingBottom: 80 }}
+                                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
+                                {(!connect.commandLogs || connect.commandLogs.length === 0) ? (
+                                    <Text style={styles.terminalPlaceholder}>Menunggu aktivitas data...</Text>
+                                ) : (connect.commandLogs.map((log) => (
+                                    <View key={log.id} style={styles.logRow}>
+                                        <Text style={[styles.logIcon, { color: log.type === 'TX' ? '#38bdf8' : '#34d399' }]}>
+                                            {log.type === 'TX' ? 'OUT' : 'IN'}
+                                        </Text>
+                                        <Text style={styles.logText}>
+                                            {log.data}
+                                        </Text>
+                                    </View>
+                                )))}
+                            </ScrollView>
+                        </View>
+                    </View>
+                )}
             </View>
 
             {/* Area Aksi Bawah */}
             <View style={styles.footer}>
                 <Button
-                    title="Mulai Diagnosa"
-                    disabled={!connect.connected || connect.connecting}
+                    title={isDiagnosing ? "Memproses Inisialisasi..." : "Mulai Diagnosa"}
+                    disabled={!connect.connected || connect.connecting || isDiagnosing}
                     onPress={sendTestData}
                 />
             </View>
@@ -169,12 +216,13 @@ export default function Connect() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f8fafc", // Warna latar modern yang lembut
+        backgroundColor: "#f8fafc",
     },
     content: {
         flex: 1,
         padding: 20,
     },
+    // --- STATUS CARD ---
     statusCard: {
         marginTop: 24,
         backgroundColor: "#fff",
@@ -183,14 +231,24 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         minHeight: 220,
-        // Bayangan lembut
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 12,
         elevation: 2,
     },
+    statusCardCompact: {
+        minHeight: 80,
+        padding: 16,
+        marginTop: 16,
+        flexDirection: "row",
+        justifyContent: "flex-start",
+    },
     statusInner: {
+        alignItems: "center",
+    },
+    statusInnerCompact: {
+        flexDirection: "row",
         alignItems: "center",
     },
     iconCircle: {
@@ -201,15 +259,16 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginBottom: 16,
     },
-    iconCircleIdle: {
-        backgroundColor: "#f1f5f9", // Slate 100
+    iconCircleCompact: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        marginBottom: 0,
+        marginRight: 16,
     },
-    iconCircleSuccess: {
-        backgroundColor: "#d1fae5", // Emerald 100
-    },
-    iconCircleError: {
-        backgroundColor: "#fee2e2", // Red 100
-    },
+    iconCircleIdle: { backgroundColor: "#f1f5f9" },
+    iconCircleSuccess: { backgroundColor: "#d1fae5" },
+    iconCircleError: { backgroundColor: "#fee2e2" },
     statusIcon: {
         marginBottom: 16,
         transform: [{ scale: 1.5 }],
@@ -219,14 +278,93 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         fontSize: 20,
     },
+    statusTitleCompact: {
+        color: "#0f172a",
+        fontSize: 16,
+        marginBottom: 2,
+    },
     statusDesc: {
         color: "#64748b",
         textAlign: "center",
         paddingHorizontal: 16,
     },
+    statusDescCompact: {
+        color: "#64748b",
+    },
+    compactTextContainer: {
+        alignItems: "flex-start",
+    },
     textError: {
         color: "#ef4444",
     },
+    // --- DIAGNOSTICS AREA ---
+    diagnosticsContainer: {
+        flex: 1,
+        marginTop: 24,
+    },
+    // --- TERMINAL UI ---
+    terminalContainer: {
+        flex: 1,
+        marginTop: 16,
+        backgroundColor: "#0f172a", // Slate 900
+        borderRadius: 12,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: "#1e293b",
+    },
+    terminalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "#1e293b", // Slate 800
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    terminalTitle: {
+        color: "#94a3b8",
+        fontSize: 12,
+        fontFamily: "monospace",
+        fontWeight: "bold",
+    },
+    terminalDots: {
+        flexDirection: "row",
+        gap: 6,
+    },
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    terminalScroll: {
+        flex: 1,
+        padding: 12,
+        paddingBottom: 80
+    },
+    terminalPlaceholder: {
+        color: "#475569",
+        fontFamily: "monospace",
+        fontSize: 12,
+    },
+    logRow: {
+        flexDirection: 'row',
+        marginBottom: 4,
+        alignItems: "flex-start",
+    },
+    logIcon: {
+        fontWeight: 'bold',
+        width: 30,
+        fontFamily: 'monospace',
+        fontSize: 10,
+        marginTop: 1,
+    },
+    logText: {
+        color: '#f8fafc',
+        flex: 1,
+        fontFamily: 'monospace',
+        fontSize: 10,
+        lineHeight: 14,
+    },
+    // --- FOOTER ---
     footer: {
         padding: 20,
         paddingBottom: 32,

@@ -9,7 +9,6 @@ export default function Layout() {
             <AppProvider>
                 <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="(app)" />
-                    <Stack.Screen name='add-profile' />
                 </Stack>
             </AppProvider>
         </GestureHandlerRootView>
