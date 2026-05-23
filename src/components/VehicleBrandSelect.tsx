@@ -1,21 +1,34 @@
 import { useVehicleBrands } from "@/hooks/use-vehicle-brands";
 import { View } from "./View";
 import { SelectField } from "./SelectField";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text } from "./Text";
 import { ActivityIndicator } from "react-native";
 import { useTheme } from '@react-navigation/native';
 
 interface VehicleBrandSelectProps {
+    onChange?: (value: string) => void;
 }
 
-export default function VehicleBrandSelect({ }: VehicleBrandSelectProps) {
+export default function VehicleBrandSelect({ onChange }: VehicleBrandSelectProps) {
+    
     const { colors } = useTheme();
     const { brands, fetchBrands, loading, error } = useVehicleBrands();
+    const [value, setValue] = useState<string>("");
 
-    const onChange = (value: number) => {
+    const options = useMemo(() => {
+        return [{
+            label: "Pilih Merek Kendaraan",
+            value: "",
+        }, ...brands.map(brand => ({ label: brand.name, value: brand.id }))];
+    }, [brands]);
 
-    }
+    const handleBrandChange = useCallback((value: string) => {
+        setValue(value);
+        if (onChange) {
+            onChange(value);
+        }
+    }, [onChange]);
 
     useEffect(() => {
         fetchBrands();
@@ -25,8 +38,9 @@ export default function VehicleBrandSelect({ }: VehicleBrandSelectProps) {
         <View>
             <SelectField
                 label="Pilih Merek Kendaraan"
-                options={brands.map(brand => ({ label: brand.name, value: brand.id }))}
-                onValueChange={onChange}
+                options={options}
+                value={value}
+                onValueChange={handleBrandChange}
                 disabled={loading || !!error} />
             {loading && (
                 <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: 0.7 }}>

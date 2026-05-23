@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
 import { useBluetooth } from "@/hooks/use-bluetooth";
-import ClassicBT, { BluetoothDevice } from "react-native-bluetooth-classic";
+import { BluetoothDevice } from "react-native-bluetooth-classic";
 import { useRouter } from "expo-router";
 
 export default function DiagnoseScreen() {
@@ -12,53 +12,14 @@ export default function DiagnoseScreen() {
     const router = useRouter();
     const bt = useBluetooth();
 
-    // State untuk melacak perangkat mana yang sedang mencoba terhubung
-    const [connectingTo, setConnectingTo] = useState<string | null>(null);
-
-    useEffect(() => {
-        bt.fetchPairedDevices();
-        return () => {
-            bt.stopScan();
-        };
-    }, [bt.fetchPairedDevices, bt.stopScan]);
-
     const handleConnect = async (device: BluetoothDevice) => {
         router.push(`/diagnose/connect?name=${encodeURIComponent(device.name || "Unknown")}&address=${device.address}`);
-        // // Cegah klik ganda jika sedang ada proses koneksi
-        // if (connectingTo) return;
-
-        // setConnectingTo(device.address);
-        // try {
-        //     const isConnected = await ClassicBT.connectToDevice(device.address);
-        //     if (isConnected) {
-        //         console.log(`Berhasil terhubung ke ${device.name || device.address}`);
-        //         // TODO: Tambahkan navigasi atau aksi lanjutan di sini jika sukses
-        //         await bt.refreshConnectedDevices(); // Refresh daftar perangkat yang terhubung
-        //     } else {
-        //         console.log(`Gagal terhubung ke ${device.name || device.address}`);
-        //     }
-        // } catch (error) {
-        //     console.error(`Error saat mencoba terhubung ke ${device.name || device.address}:`, error);
-        // } finally {
-        //     // Matikan indikator loading setelah selesai (sukses/gagal)
-        //     setConnectingTo(null);
-        // }
     }
 
-    const DeviceCard = ({ device, isSaved = false, isConnecting = false }: { device: BluetoothDevice, isSaved?: boolean, isConnecting?: boolean }) => (
-        <Pressable
-            style={({ pressed }) => [
-                styles.deviceCard,
-                (pressed || isConnecting) && styles.deviceCardPressed
-            ]}
-            onPress={() => handleConnect(device)}
-            disabled={isConnecting}>
+    const DeviceCard = ({ device, isSaved = false, }: { device: BluetoothDevice, isSaved?: boolean }) => (
+        <Pressable style={[styles.deviceCard]} onPress={() => handleConnect(device)}>
             <View style={[styles.iconContainer, isSaved ? styles.iconSaved : styles.iconScanned]}>
-                <MaterialCommunityIcons
-                    name={isSaved ? "bluetooth-connect" : "bluetooth"}
-                    size={24}
-                    color={isSaved ? "#0252ff" : "#64748b"}
-                />
+                <MaterialCommunityIcons name={isSaved ? "bluetooth-connect" : "bluetooth"} size={24} color={isSaved ? "#0252ff" : "#64748b"} />
             </View>
             <View style={styles.deviceInfo}>
                 <Text type="default" style={styles.deviceName}>
@@ -68,15 +29,16 @@ export default function DiagnoseScreen() {
                     {device.address}
                 </Text>
             </View>
-
-            {/* Tampilkan Loading Spinner atau Ikon Panah */}
-            {isConnecting ? (
-                <ActivityIndicator size="small" color="#0252ff" />
-            ) : (
-                <MaterialCommunityIcons name="chevron-right" size={24} color="#cbd5e1" />
-            )}
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#cbd5e1" />
         </Pressable>
     );
+
+    useEffect(() => {
+        bt.fetchPairedDevices();
+        return () => {
+            bt.stopScan();
+        };
+    }, [bt.fetchPairedDevices, bt.stopScan]);
 
     return (
         <ScreenLayout applyInsets>
@@ -94,37 +56,21 @@ export default function DiagnoseScreen() {
                 <ScrollView
                     style={styles.scrollArea}
                     contentContainerStyle={styles.scrollContent}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={bt.isLoadingPaired && !bt.isScanning}
-                            onRefresh={bt.fetchPairedDevices}
-                            colors={["#0252ff"]}
-                        />
-                    }>
-
-                    {/* --- BAGIAN 1: PERANGKAT TERSIMPAN --- */}
+                    refreshControl={<RefreshControl refreshing={bt.isLoadingPaired && !bt.isScanning} onRefresh={bt.fetchPairedDevices} colors={["#0252ff"]} />}>
                     <View style={styles.section}>
                         <Text type="smallBold" style={styles.sectionTitle}>TERSIMPAN SEBELUMNYA</Text>
 
                         {bt.isLoadingPaired ? (
                             <ActivityIndicator size="small" color="#0252ff" style={styles.loader} />
-                        ) : bt.pairedDevices.length > 0 ? (
-                            bt.pairedDevices.map((device) => (
-                                <DeviceCard
-                                    key={device.address}
-                                    device={device}
-                                    isSaved={true}
-                                    isConnecting={connectingTo === device.address}
-                                />
-                            ))
-                        ) : (
+                        ) : bt.pairedDevices.length > 0 ? (bt.pairedDevices.map((device) => (
+                            <DeviceCard key={device.address} device={device} isSaved={true} />
+                        ))) : (
                             <View style={styles.emptyState}>
                                 <Text type="small" style={styles.emptyText}>Belum ada perangkat yang tersimpan.</Text>
                             </View>
                         )}
                     </View>
 
-                    {/* --- BAGIAN 2: PERANGKAT TERSEDIA --- */}
                     <View style={styles.section}>
                         <View style={styles.sectionHeaderRow}>
                             <Text type="smallBold" style={styles.sectionTitle}>PERANGKAT TERSEDIA</Text>
@@ -142,16 +88,13 @@ export default function DiagnoseScreen() {
                             </Pressable>
                         </View>
 
-                        {bt.scannedDevices.length > 0 ? (
-                            bt.scannedDevices.map((device) => (
-                                <DeviceCard
-                                    key={device.address}
-                                    device={device}
-                                    isSaved={false}
-                                    isConnecting={connectingTo === device.address}
-                                />
-                            ))
-                        ) : (
+                        {bt.scannedDevices.length > 0 ? (bt.scannedDevices.map((device) => (
+                            <DeviceCard
+                                key={device.address}
+                                device={device}
+                                isSaved={false}
+                            />
+                        ))) : (
                             <View style={styles.emptyState}>
                                 {bt.isScanning ? (
                                     <Text type="small" style={styles.emptyText}>Mencari perangkat di sekitar Anda...</Text>

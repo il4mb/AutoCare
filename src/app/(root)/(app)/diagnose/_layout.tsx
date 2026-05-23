@@ -6,6 +6,7 @@ export default function Layout() {
         <BluetoothSuspense>
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" />
+                <Stack.Screen name="connect" />
             </Stack>
         </BluetoothSuspense>
     );

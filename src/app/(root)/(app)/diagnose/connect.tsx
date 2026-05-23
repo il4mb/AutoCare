@@ -1,6 +1,6 @@
 import ClassicBT, { BluetoothDevice } from "react-native-bluetooth-classic";
 import ScreenLayout from "@/components/ScreenLayout";
-import { View, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
+import { View, StyleSheet, ActivityIndicator, ScrollView, Modal, BackHandler } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useConnect } from "@/hooks/use-connect";
@@ -8,26 +8,25 @@ import { Text } from "@/components/Text";
 import ConnectionBadge from "@/components/ConnectionBadge";
 import { Button } from "@/components/Button";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { SelectField } from "@/components/SelectField";
-import { VEHICLE_MODELS } from "@/constants/vehicles-models";
 import { parseODBResponse } from "@/parser";
 import VehicleBrandSelect from "@/components/VehicleBrandSelect";
+import { BlurTargetView, BlurView } from "expo-blur";
 
 type ConnectParams = {
     name: string;
     address: string;
 }
 
-export default function Connect() {
+export default function ConnectScreen() {
+
     const { name, address } = useLocalSearchParams<ConnectParams>();
     const router = useRouter();
     const connect = useConnect(address);
-
-    // Ref untuk scroll view terminal
     const scrollViewRef = useRef<ScrollView>(null);
-
-    // State untuk mengunci tombol saat inisialisasi berjalan
+    const blurTargetRef = useRef<View>(null);
+    const [model, setModel] = useState<string | null>(null);
     const [isDiagnosing, setIsDiagnosing] = useState(false);
+    const [showDTCNotFound, setShowDTCNotFound] = useState(false);
 
     const handleConnect = useCallback(async () => {
         if (connect.connected || connect.connecting) return;
@@ -40,32 +39,48 @@ export default function Connect() {
     }, [connect]);
 
     const sendTestData = useCallback(async () => {
+
         if (!connect.connected) return;
-        setIsDiagnosing(true); // Mulai loading
+        setIsDiagnosing(true);
+
         try {
+
             console.log("Memulai Inisialisasi...");
-
-            // Pancing buffer jika ada data nyangkut
             await ClassicBT.readFromDevice(address).catch(() => { });
-
-            // Menggunakan request: Kode akan MENUNGGU balasan sebelum lanjut ke baris berikutnya
             await connect.request("ATZ");
             await connect.request("ATE0");
             await connect.request("ATL0");
             await connect.request("ATSP0");
             await connect.request("0100");
-            const DTC = await connect.request("03");
+            const rawCode = await connect.request("03");
+            const dtcCodes = parseODBResponse(rawCode);
+
+            if (dtcCodes.length === 0) {
+                console.log("✅ Tidak ditemukan kode DTC, kemungkinan besar kendaraan dalam kondisi baik.");
+                setShowDTCNotFound(true);
+                return;
+            }
 
             console.log("✅ Semua data inisialisasi berhasil diproses!");
-            console.log("DTC:", parseODBResponse(DTC));
+            console.log("DTC:", parseODBResponse(rawCode));
+            router.push(`/diagnose/result?dtc=${encodeURIComponent(JSON.stringify(dtcCodes))}&model=${encodeURIComponent(model || "")}`);
+
         } catch (error: any) {
+
             console.error("❌ Proses terhenti:", error.message);
+
         } finally {
-            setIsDiagnosing(false); // Selesai loading
+
+            setIsDiagnosing(false);
+
         }
     }, [connect, address]);
 
-    // Pastikan parameter name dan address tersedia
+    const goBack = useCallback(async () => {
+        await handleDisconnect();
+        router.back();
+    }, [router, handleDisconnect]);
+
     useEffect(() => {
         if (!name || !address) {
             router.back();
@@ -73,7 +88,20 @@ export default function Connect() {
         }
     }, [name, address, router]);
 
-    // Fungsi render untuk status card
+    useEffect(() => {
+        const subscribe = BackHandler.addEventListener("hardwareBackPress", () => {
+            console.log("Back button pressed");
+            if (showDTCNotFound) {
+                setShowDTCNotFound(false);
+                return true;
+            }
+        });
+
+        return () => {
+            subscribe.remove();
+        };
+    }, [showDTCNotFound]);
+
     const renderStatusContent = () => {
         if (connect.connecting) {
             return (
@@ -132,83 +160,97 @@ export default function Connect() {
 
     return (
         <ScreenLayout applyInsets style={styles.container}>
-            <View style={styles.content}>
-
-                {/* Badge Koneksi */}
-                <ConnectionBadge
-                    name={name}
-                    address={address}
-                    connected={connect.connected}
-                    disabled={connect.connecting}
-                    loading={connect.connecting}
-                    onConnect={handleConnect}
-                    onDisconnect={handleDisconnect}
-                />
-
-                <View style={{ marginTop: 24 }}>
-                    <VehicleBrandSelect />
-                </View>
-
-
-                {/* Status Card (Mengecil jika terhubung) */}
-                <View style={[styles.statusCard, connect.connected && styles.statusCardCompact]}>
-                    {renderStatusContent()}
-                </View>
-
-                {/* Area Kontrol Diagnosa & Terminal */}
-                {connect.connected && (
-                    <View style={styles.diagnosticsContainer}>
-
-                        {/* <SelectField
-                            label="Pilih Model Kendaraan"
-                            options={VEHICLE_MODELS.map((model, i) => ({ label: `${model.brand} ${model.model}`, value: i }))}
-                            onValueChange={(value) => {
-                                console.log("Model Dipilih:", value);
-                            }}
-                        /> */}
-
-                        {/* Terminal UI */}
-                        <View style={styles.terminalContainer}>
-                            <View style={styles.terminalHeader}>
-                                <Text style={styles.terminalTitle}>OBD-II Console</Text>
-                                <View style={styles.terminalDots}>
-                                    <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
-                                    <View style={[styles.dot, { backgroundColor: '#eab308' }]} />
-                                    <View style={[styles.dot, { backgroundColor: '#22c55e' }]} />
-                                </View>
-                            </View>
-
-                            <ScrollView
-                                ref={scrollViewRef}
-                                style={styles.terminalScroll}
-                                contentContainerStyle={{ paddingBottom: 80 }}
-                                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
-                                {(!connect.commandLogs || connect.commandLogs.length === 0) ? (
-                                    <Text style={styles.terminalPlaceholder}>Menunggu aktivitas data...</Text>
-                                ) : (connect.commandLogs.map((log) => (
-                                    <View key={log.id} style={styles.logRow}>
-                                        <Text style={[styles.logIcon, { color: log.type === 'TX' ? '#38bdf8' : '#34d399' }]}>
-                                            {log.type === 'TX' ? 'OUT' : 'IN'}
-                                        </Text>
-                                        <Text style={styles.logText}>
-                                            {log.data}
-                                        </Text>
+            <BlurTargetView ref={blurTargetRef} style={styles.container}>
+                <View style={styles.content}>
+                    <ConnectionBadge
+                        name={name}
+                        address={address}
+                        connected={connect.connected}
+                        disabled={connect.connecting}
+                        loading={connect.connecting}
+                        onConnect={handleConnect}
+                        onDisconnect={handleDisconnect}
+                    />
+                    <View style={{ marginTop: 24 }}>
+                        <VehicleBrandSelect onChange={(brand) => setModel(brand)} />
+                        {!model && (
+                            <Text type="small" style={{ color: "#64748b", marginTop: 8 }}>
+                                Pilih merek kendaraan untuk hasil diagnosa yang lebih akurat.
+                            </Text>
+                        )}
+                    </View>
+                    <View style={[styles.statusCard, connect.connected && styles.statusCardCompact]}>
+                        {renderStatusContent()}
+                    </View>
+                    {connect.connected && (
+                        <View style={styles.diagnosticsContainer}>
+                            <View style={styles.terminalContainer}>
+                                <View style={styles.terminalHeader}>
+                                    <Text style={styles.terminalTitle}>OBD-II Console</Text>
+                                    <View style={styles.terminalDots}>
+                                        <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
+                                        <View style={[styles.dot, { backgroundColor: '#eab308' }]} />
+                                        <View style={[styles.dot, { backgroundColor: '#22c55e' }]} />
                                     </View>
-                                )))}
-                            </ScrollView>
+                                </View>
+
+                                <ScrollView
+                                    ref={scrollViewRef}
+                                    style={styles.terminalScroll}
+                                    contentContainerStyle={{ paddingBottom: 80 }}
+                                    onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
+                                    {(!connect.commandLogs || connect.commandLogs.length === 0) ? (
+                                        <Text style={styles.terminalPlaceholder}>Menunggu aktivitas data...</Text>
+                                    ) : (connect.commandLogs.map((log) => (
+                                        <View key={log.id} style={styles.logRow}>
+                                            <Text style={[styles.logIcon, { color: log.type === 'TX' ? '#38bdf8' : '#34d399' }]}>
+                                                {log.type === 'TX' ? 'OUT' : 'IN'}
+                                            </Text>
+                                            <Text style={styles.logText}>
+                                                {log.data}
+                                            </Text>
+                                        </View>
+                                    )))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    )}
+                </View>
+                <View style={styles.footer}>
+                    <Button
+                        title={isDiagnosing ? "Memproses Inisialisasi..." : "Mulai Diagnosa"}
+                        disabled={!connect.connected || connect.connecting || isDiagnosing || !model}
+                        onPress={sendTestData}
+                    />
+                </View>
+            </BlurTargetView>
+
+            <Modal
+                visible={showDTCNotFound}
+                onRequestClose={() => setShowDTCNotFound(false)}
+                transparent
+                animationType="fade">
+                <BlurView
+                    intensity={50}
+                    blurTarget={blurTargetRef}
+                    blurMethod="dimezisBlurView"
+                    style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
+                        <View style={{ backgroundColor: "#fff", padding: 24, borderRadius: 12, alignItems: "center", gap: 16 }}>
+                            <MaterialCommunityIcons name="check-circle" size={48} color="#10b981" />
+                            <View style={{ alignItems: "center", gap: 0, marginBottom: 8 }}>
+                                <Text type="subtitle" style={styles.statusTitle}>
+                                    Tidak Ditemukan Kode DTC
+                                </Text>
+                                <Text type="small" style={{ color: "#475569", textAlign: "center" }}>
+                                    Tidak ditemukan kode DTC pada kendaraan Anda. Kemungkinan besar tidak ada masalah yang terdeteksi.
+                                </Text>
+                            </View>
+                            <Button title="Kembali" onPress={goBack} />
                         </View>
                     </View>
-                )}
-            </View>
-
-            {/* Area Aksi Bawah */}
-            <View style={styles.footer}>
-                <Button
-                    title={isDiagnosing ? "Memproses Inisialisasi..." : "Mulai Diagnosa"}
-                    disabled={!connect.connected || connect.connecting || isDiagnosing}
-                    onPress={sendTestData}
-                />
-            </View>
+                </BlurView>
+            </Modal>
         </ScreenLayout>
     );
 }

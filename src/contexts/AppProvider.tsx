@@ -1,19 +1,19 @@
-import { createContext, useCallback, useContext, useEffect, useReducer, useState, useRef } from "react";
-import { Modal, View, StyleSheet, ActivityIndicator } from "react-native";
-import { BlurView } from "expo-blur";
-import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurTargetView, BlurView } from "expo-blur";
+import { useRouter } from "expo-router";
+import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { ActivityIndicator, Modal, StyleSheet, View } from "react-native";
 
+import api from "@/api";
 import { initialState, reducer } from "@/reducer";
 import { Action, State } from "@/types";
-import api from "@/api";
 
-import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
+import { Text } from "@/components/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type Auth = {
-    uid: string;
+    id: string;
     email: string;
     name: string;
 }
@@ -35,7 +35,7 @@ export default function AppProvider({ children }: Props) {
 
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const blurRef = useRef<View>(null);
+    const blurRef = useRef<View | null>(null);
 
     const [state, dispatch] = useReducer(reducer, initialState);
     const [auth, setAuth] = useState<Auth | null>(null);
@@ -55,7 +55,7 @@ export default function AppProvider({ children }: Props) {
                 }
                 throw new Error(`Gagal mengambil data autentikasi: ${response.statusText}`);
             }
-            setAuth(response.data);
+            setAuth(response.data.data);
             setAuthErrorVisible(false); // Pastikan modal tertutup jika sukses
         } catch (e: any) {
             console.error("Failed to fetch auth data", e);
@@ -82,8 +82,11 @@ export default function AppProvider({ children }: Props) {
 
     return (
         <Context.Provider value={{ state, dispatch, auth, refreshAuth: fetchAuth }}>
-            <View style={styles.container} ref={blurRef}>
-                {loadingAuth ? (
+            <BlurTargetView
+                style={styles.container}
+                pointerEvents={loadingAuth ? "none" : "auto"} // Pastikan interaksi diblokir saat loading auth
+                ref={blurRef}>
+                {loadingAuth && (
                     <View style={[styles.loadingBadge, { top: insets.top + 15, left: insets.left + 15, right: insets.right + 15 }]}>
                         <ActivityIndicator size="small" color="#3b82f6" />
                         <Text style={{ marginTop: 12, color: "#3b82f6" }}>
@@ -92,22 +95,15 @@ export default function AppProvider({ children }: Props) {
                     </View>
                 )}
                 {children}
-            </View>
-
-            {/* Modal Error Autentikasi */}
-            <Modal
-                visible={authErrorVisible} // FIX: Gunakan state, bukan true statis
-                transparent
-                animationType="fade"
-                onRequestClose={() => setAuthErrorVisible(false)}>
+            </BlurTargetView>
+            <Modal visible={authErrorVisible} transparent animationType="fade">
                 <BlurView
                     blurTarget={blurRef}
-                    blurMethod="dimezisBlurView" // Eksperimental Expo 50+ (Android)
-                    tint="dark"                  // Ubah ke dark agar card putih lebih kontras
-                    intensity={40}               // Berikan intensitas blur
+                    blurMethod="dimezisBlurView"
+                    tint="dark"
+                    intensity={20}
                     style={styles.blurOverlay}>
                     <View style={styles.modalCard}>
-                        {/* Ikon Peringatan */}
                         <View style={styles.iconContainer}>
                             <MaterialCommunityIcons name="shield-lock-outline" size={48} color="#ef4444" />
                         </View>
@@ -157,10 +153,16 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     blurOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 998,
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.3)', // Fallback jika blur gagal
+        // backgroundColor: 'rgba(0, 0, 0, 0)', // Fallback jika blur gagal
     },
     modalCard: {
         backgroundColor: "#ffffff",

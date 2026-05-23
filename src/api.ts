@@ -74,4 +74,24 @@ function parseCookies(cookieStr: string) {
     }, {} as Record<string, string>);
 }
 
+export const isCookieValid = async (cookieName: string): Promise<boolean> => {
+    try {
+        const cookies = await SecureStore.getItemAsync(COOKIE_KEY);
+        if (!cookies) return false;
+        const cookieMap = parseCookies(cookies);
+        return !!cookieMap[cookieName];
+    } catch (e) {
+        console.error('Failed to check cookie validity', e);
+        return false;
+    }
+};
+
+export const clearCookies = async () => {
+    try {
+        await SecureStore.deleteItemAsync(COOKIE_KEY);
+    } catch (e) {
+        console.error('Failed to clear cookies', e);
+    }
+};
+
 export default api;

@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import api from "@/api";
 
 type VehicleBrand = {
-    id: number;
+    id: string;
     name: string;
 }
 export const useVehicleBrands = () => {
@@ -22,11 +22,10 @@ export const useVehicleBrands = () => {
                 }
                 throw new Error(`Failed to fetch brands: ${response.statusText}`);
             }
-            if (!response.data || !Array.isArray(response.data)) {
+            if (!response.data.data || !Array.isArray(response.data.data)) {
                 throw new Error("Unexpected response format for brands");
             }
-            const data = response.data as VehicleBrand[];
-            console.log("Fetched Brands:", data);
+            const data = response.data.data as VehicleBrand[];
             setBrands(data);
         } catch (err) {
             setError(err as Error);
