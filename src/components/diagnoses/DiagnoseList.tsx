@@ -7,8 +7,11 @@ import { useRouter } from "expo-router";
 import { Text } from "../Text"; // Sesuaikan path ini dengan struktur folder Anda
 import { db } from "@/database";
 import { Diagnose } from "@/database/model/Diagnose";
+import { useApp } from "@/contexts/AppProvider";
+import { Q } from "@nozbe/watermelondb";
 
 export default function DiagnoseList() {
+    const { auth } = useApp();
     const { colors } = useTheme();
     const router = useRouter();
 
@@ -20,7 +23,10 @@ export default function DiagnoseList() {
 
         // Memantau perubahan tabel Diagnose secara real-time
         // Jika Anda mengatur Q.sortBy di skema, tambahkan: .query(Q.sortBy('created_at', Q.desc))
-        const subscription = collection.query().observe().subscribe((records) => {
+        const subscription = collection.query(
+            Q.sortBy('created_at', Q.asc),
+            Q.where('uid', auth?.id || '')
+        ).observe().subscribe((records) => {
             // Kita balik urutannya (reverse) agar data terbaru berada di posisi paling atas
             setDiagnoses([...records].reverse());
         });
@@ -173,7 +179,7 @@ const styles = StyleSheet.create({
     fab: {
         position: 'absolute',
         bottom: 24, // Posisi sedikit diangkat agar tidak menyentuh bezel bawah
-        right: 24, // Mengubah posisi FAB ke kanan bawah (standar mobile UX)
+        right: 0, // Mengubah posisi FAB ke kanan bawah (standar mobile UX)
         elevation: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },

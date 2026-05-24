@@ -9,8 +9,10 @@ import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { Diagnose } from "@/database/model/Diagnose";
 import { db } from "@/database";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ResultScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -91,6 +93,7 @@ export default function ResultScreen() {
                 <div class="header">
                     <h1>Laporan Diagnosa AutoCare</h1>
                     <p>ID Referensi: ${diagnose.id}</p>
+                    <p>Model Kendaraan: ${diagnose.model ? diagnose.model.name : "Tidak terdeteksi"}</p>
                     <p>Tanggal: ${new Date(diagnose.createdAt).toLocaleString('id-ID')}</p>
                 </div>
 
@@ -245,6 +248,12 @@ export default function ResultScreen() {
         <ScreenLayout applyInsets style={styles.container}>
             <View style={styles.header}>
                 <Text type="title" style={styles.headerTitle}>Hasil Diagnosa</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <MaterialCommunityIcons name="car-info" size={28} color="#10b981" />
+                    <Text style={{ color: "#0c3527", fontWeight: "600" }}>
+                        {diagnose?.model ? `${diagnose.model.name}` : "Model tidak terdeteksi"}
+                    </Text>
+                </View>
                 <Text style={styles.headerSubtitle}>
                     Ditemukan {knownCodes.length} informasi kerusakan.
                 </Text>
@@ -306,12 +315,14 @@ export default function ResultScreen() {
             <Pressable 
                 style={({ pressed }) => [
                     styles.fab, 
+                    {
+                        bottom: insets.bottom + 24, // Sesuaikan posisi FAB dengan safe area
+                    },
                     pressed && styles.fabPressed,
                     isPrinting && styles.fabDisabled
                 ]}
                 onPress={handlePrintPDF}
-                disabled={isPrinting}
-            >
+                disabled={isPrinting}>
                 {isPrinting ? (
                     <ActivityIndicator size="small" color="#ffffff" />
                 ) : (

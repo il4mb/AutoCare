@@ -8,15 +8,18 @@ import ScreenLayout from '@/components/ScreenLayout';
 import { Button } from '@/components/Button';
 import DiagnoseList from '@/components/diagnoses/DiagnoseList';
 import { db, Diagnose } from '@/database';
+import { useApp } from '@/contexts/AppProvider';
+import { Q } from '@nozbe/watermelondb';
 
 export default function HomeScreen() {
     const router = useRouter();
-    
+    const { auth } = useApp();
+
     // Status untuk menunggu pengecekan DB pertama kali
-    const [isLoading, setIsLoading] = useState(true); 
+    const [isLoading, setIsLoading] = useState(true);
     const [isEmpty, setIsEmpty] = useState(true);
     // Status jika user menekan "Lewati untuk sekarang"
-    const [isSkipped, setIsSkipped] = useState(false); 
+    const [isSkipped, setIsSkipped] = useState(false);
 
     const gotoCreateDiagnose = () => router.push('/diagnose');
     const gotoProfile = () => router.push('/profile');
@@ -24,13 +27,14 @@ export default function HomeScreen() {
 
     useEffect(() => {
         const collection = db.get<Diagnose>(Diagnose.table);
-        
-        // Observe akan langsung menembak 'next' saat query pertama selesai dieksekusi
-        const subscription = collection.query().observe().subscribe((records) => {
+        const subscription = collection.query(
+            Q.sortBy('created_at', Q.desc),
+            Q.where('uid', auth?.id || '')
+        ).observe().subscribe((records) => {
             setIsEmpty(records.length === 0);
             setIsLoading(false); // Pengecekan selesai
         });
-        
+
         return () => subscription.unsubscribe();
     }, []);
 
@@ -66,13 +70,13 @@ export default function HomeScreen() {
                     <Text style={{ color: '#888', textAlign: 'center' }}>
                         Mulai dengan menghubungkan perangkat OBD-II Anda untuk melihat metrik kendaraan dan melakukan diagnosa.
                     </Text>
-                    
+
                     <Button
                         title="Mulai Diagnosa"
                         onPress={gotoCreateDiagnose}
                         style={{ paddingHorizontal: 42, marginTop: 8 }}
                     />
-                    
+
                     <Pressable onPress={skipWelcome} style={{ padding: 8 }}>
                         <Text style={{ color: '#888', textDecorationLine: 'underline' }}>
                             Lewati untuk sekarang
@@ -85,11 +89,11 @@ export default function HomeScreen() {
                     {/* Header List + Tombol Tambah Diagnosa Baru */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <Text style={{ color: '#64748b', flex: 1 }}>
-                            {isEmpty 
-                                ? 'Belum ada data. Lakukan diagnosa pertama Anda.' 
+                            {isEmpty
+                                ? 'Belum ada data. Lakukan diagnosa pertama Anda.'
                                 : 'Riwayat diagnosa kendaraan Anda:'}
                         </Text>
-                        
+
                         {/* Tombol kecil untuk diagnosa baru saat list tampil */}
                         <Pressable onPress={gotoCreateDiagnose} style={{ padding: 8, backgroundColor: '#eff6ff', borderRadius: 8 }}>
                             <FontAwesome6 name="plus" size={16} color="#0252ff" />

@@ -24,11 +24,9 @@ export default function EditProfileScreen() {
 
     const [loading, setLoading] = useState(false);
     const [info, setInfo] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-    // Inisialisasi state dengan data pengguna yang sedang login
     const [data, setData] = useState({
         name: auth?.name || "",
-        password: "", // Dikosongkan, hanya diisi jika ingin diganti
+        password: "",
         confirmPassword: "",
     });
 
@@ -67,8 +65,8 @@ export default function EditProfileScreen() {
                 payload.password = data.password;
             }
 
-            // Asumsi endpoint untuk update profil adalah PUT /auth/profile
-            const response = await api.put("/auth/profile", payload);
+            // Asumsi endpoint untuk update profil adalah PUT /auth/me
+            const response = await api.put("/auth/me", payload);
 
             if (response.status === 200 || response.status === 201) {
                 // Perbarui state global agar nama di UI lain ikut berubah

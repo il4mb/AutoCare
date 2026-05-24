@@ -47,7 +47,7 @@ type DiagnoseResponse = {
         causes: string[];
         solutions: string[];
     }[]
-    model: {
+    brand: {
         id: string;
         name: string;
     } | null;
@@ -64,7 +64,7 @@ export const createDiagnoseByCodeAndModel = async (codes: string[], modelId: str
         throw new Error(response.data.message || "Gagal mengambil data diagnosa");
     }
     const diagnoseData = response.data.data;
-    const modelData = response.data.model;
+    const modelData = response.data.brand;
 
     console.log("Diagnose data received from API:", diagnoseData);
 
