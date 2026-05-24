@@ -17,6 +17,7 @@ export default function ForgotPasswordScreen() {
             return;
         }
         setSending(true);
+        setInfo(null);
         try {
             // Asumsi endpoint untuk reset password adalah /auth/forgot-password
             const response = await api.post("/auth/forgot-password", { email });
@@ -27,6 +28,7 @@ export default function ForgotPasswordScreen() {
                 setInfo({ type: "error", message: "Gagal mengirim tautan reset. Silakan coba lagi." });
             }
         } catch (e: any) {
+            console.error("Error sending reset link:", e);
             const errorMsg = e.response?.data?.message || "Koneksi ke server gagal. Silakan coba lagi.";
             setInfo({ type: "error", message: errorMsg });
         } finally {
@@ -46,16 +48,17 @@ export default function ForgotPasswordScreen() {
                 value={email}
                 onChangeText={setEmail}
             />
-            <Button
-                title="Kirim Tautan Reset"
-                disabled={sending}
-                loading={sending}
-                onPress={handleSendResetLink} />
             {info && (
                 <Text style={{ color: info.type === "success" ? "#16a34a" : "#b91c1c", marginTop: 8 }}>
                     {info.message}
                 </Text>
             )}
+            <Button
+                title="Kirim Tautan Reset"
+                disabled={sending}
+                loading={sending}
+                onPress={handleSendResetLink} />
+
         </View>
     );
 }
