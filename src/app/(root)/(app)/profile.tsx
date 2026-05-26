@@ -1,12 +1,13 @@
-import { Alert, View, StyleSheet, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 
 import { clearCookies } from "@/api";
-import { useApp } from "@/contexts/AppProvider";
+import { Button } from "@/components/Button"; // Pastikan Button mendukung styling/warna
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button"; // Pastikan Button mendukung styling/warna
+import { useApp } from "@/contexts/AppProvider";
+import i18n from "@/localization";
 
 export default function Profile() {
     const router = useRouter();
@@ -19,17 +20,17 @@ export default function Profile() {
             router.replace("/sign-in");
         } catch (error) {
             console.error("Gagal logout:", error);
-            Alert.alert("Error", "Gagal keluar dari akun. Silakan coba lagi.");
+            Alert.alert(i18n.t("profile.logoutErrorTitle"), i18n.t("profile.logoutErrorMessage"));
         }
     }   
 
     const confirmLogout = () => {
         Alert.alert(
-            "Konfirmasi Keluar",
-            "Apakah Anda yakin ingin keluar dari sesi ini?",
+            i18n.t("profile.logoutTitle"),
+            i18n.t("profile.logoutMessage"),
             [
-                { text: "Batal", style: "cancel" },
-                { text: "Keluar", style: "destructive", onPress: handleLogout }
+                { text: i18n.t("common.cancel"), style: "cancel" },
+                { text: i18n.t("profile.accountLogout"), style: "destructive", onPress: handleLogout }
             ]
         );
     };
@@ -45,7 +46,7 @@ export default function Profile() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 
                 {/* Header Judul */}
-                <Text type="title" style={styles.pageTitle}>Profil Pengguna</Text>
+                <Text type="title" style={styles.pageTitle}>{i18n.t("profile.title")}</Text>
 
                 {auth ? (
                     <>
@@ -54,8 +55,8 @@ export default function Profile() {
                             <View style={styles.avatarContainer}>
                                 <Text style={styles.avatarText}>{getInitial(auth.name)}</Text>
                             </View>
-                            <Text style={styles.nameText}>{auth.name || "Pengguna"}</Text>
-                            <Text style={styles.emailText}>{auth.email || "email@tidak.ada"}</Text>
+                            <Text style={styles.nameText}>{auth.name || i18n.t("profile.nameFallback")}</Text>
+                            <Text style={styles.emailText}>{auth.email || i18n.t("profile.emailFallback")}</Text>
                         </View>
 
                         {/* List Detail Tambahan */}
@@ -65,7 +66,7 @@ export default function Profile() {
                                     <MaterialCommunityIcons name="identifier" size={20} color="#64748b" />
                                 </View>
                                 <View style={styles.detailTextContainer}>
-                                    <Text style={styles.detailLabel}>User ID</Text>
+                                    <Text style={styles.detailLabel}>{i18n.t("profile.userId")}</Text>
                                     <Text style={styles.detailValue} numberOfLines={1} ellipsizeMode="middle">
                                         {auth.id}
                                     </Text>
@@ -79,8 +80,8 @@ export default function Profile() {
                                     <MaterialCommunityIcons name="shield-check-outline" size={20} color="#10b981" />
                                 </View>
                                 <View style={styles.detailTextContainer}>
-                                    <Text style={styles.detailLabel}>Status Akun</Text>
-                                    <Text style={styles.detailValue}>Aktif & Terverifikasi</Text>
+                                    <Text style={styles.detailLabel}>{i18n.t("profile.accountStatus")}</Text>
+                                    <Text style={styles.detailValue}>{i18n.t("profile.activeVerified")}</Text>
                                 </View>
                             </View>
                         </View>
@@ -88,19 +89,19 @@ export default function Profile() {
                 ) : (
                     <View style={styles.emptyContainer}>
                         <MaterialCommunityIcons name="account-off-outline" size={48} color="#cbd5e1" />
-                        <Text style={styles.emptyText}>Data pengguna tidak tersedia</Text>
+                        <Text style={styles.emptyText}>{i18n.t("profile.noData")}</Text>
                     </View>
                 )}
 
                 {/* Tombol Logout */}
                 <View style={styles.footerContainer}>
                     <Button 
-                        title="Edit Profil" 
+                        title={i18n.t("profile.editProfile")} 
                         onPress={() => router.push("/edit-profile")} 
                         style={styles.editButton}
                     />
                     <Button 
-                        title="Keluar Akun" 
+                        title={i18n.t("profile.logout")} 
                         onPress={confirmLogout} 
                         style={styles.logoutButton}
                     />

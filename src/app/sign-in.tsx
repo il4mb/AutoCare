@@ -1,27 +1,25 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    View,
-    StyleSheet,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
-    Keyboard,
-    ScrollView
+    ScrollView,
+    StyleSheet,
+    View
 } from "react-native";
-import { useRouter } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import api from "@/api";
-// import { useApp } from "@/context/AppProvider"; 
 import { Button } from "@/components/Button";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
+import i18n from "@/localization";
 import { AxiosError } from "axios";
 
 export default function SignInScreen() {
     const router = useRouter();
-    // const { refreshAuth } = useApp(); 
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState({
@@ -36,7 +34,7 @@ export default function SignInScreen() {
 
     const handleSignIn = async () => {
         if (!data.email.trim() || !data.password.trim()) {
-            setError("Email dan password tidak boleh kosong.");
+            setError(i18n.t("signin.errors.invalidCredentials"));
             return;
         }
 
@@ -49,14 +47,14 @@ export default function SignInScreen() {
             if (response.status === 200) {
                 router.replace("/home");
             } else {
-                setError("Gagal masuk. Periksa kembali kredensial Anda.");
+                setError(i18n.t("signin.errors.signInFailed"));
             }
         } catch (e: any) {
-            if(e instanceof AxiosError && e.response?.data?.error) {
-                setError(e.response?.data?.error);
+            if (e instanceof AxiosError && e.response?.data?.error) {
+                setError(i18n.t("signin.errors.networkError"));
                 return;
             }
-            const errorMsg = e.response?.data?.message || "Koneksi ke server gagal. Silakan coba lagi.";
+            const errorMsg = e.response?.data?.message || i18n.t("signin.errors.unknownError");
             setError(errorMsg);
         } finally {
             setLoading(false);
@@ -79,9 +77,11 @@ export default function SignInScreen() {
                         <View style={styles.iconContainer}>
                             <MaterialCommunityIcons name="car-connected" size={48} color="#0252ff" />
                         </View>
-                        <Text type="title" style={styles.title}>Selamat Datang</Text>
+                        <Text type="title" style={styles.title}>
+                            {i18n.t("common.welcome")}
+                        </Text>
                         <Text style={styles.subtitle}>
-                            Masuk untuk melanjutkan diagnosa kendaraan
+                            {i18n.t("signin.subtitle")}
                         </Text>
                     </View>
 
@@ -94,7 +94,7 @@ export default function SignInScreen() {
 
                     <View style={styles.formContainer}>
                         <TextField
-                            label="Alamat Email"
+                            label={i18n.t("signin.emailPlaceholder")}
                             value={data.email}
                             onChangeText={(text) => updateData("email", text)}
                             keyboardType="email-address"
@@ -102,24 +102,24 @@ export default function SignInScreen() {
                             autoCorrect={false}
                         />
                         <TextField
-                            label="Kata Sandi"
+                            label={i18n.t("signin.passwordPlaceholder")}
                             value={data.password}
                             onChangeText={(text) => updateData("password", text)}
                             secureTextEntry
                         />
                         <Text style={styles.forgotPasswordText} onPress={() => router.push("/forgot-password")}>
-                            Lupa kata sandi?
+                            {i18n.t("signin.forgotPassword")}
                         </Text>
                         <Button
-                            title={loading ? "Memproses..." : "Masuk"}
+                            title={loading ? i18n.t("signin.loading") : i18n.t("signin.button")}
                             onPress={handleSignIn}
                             disabled={loading}
                             style={styles.submitButton}
                         />
                         <Text style={styles.signUpText}>
-                            Belum punya akun?{" "}
+                            {i18n.t("signin.noAccount")}
                             <Text style={styles.signUpLink} onPress={() => router.push("/sign-up")}>
-                                Daftar di sini
+                                {i18n.t("signin.signUp")}
                             </Text>
                         </Text>
                     </View>

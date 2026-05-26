@@ -1,8 +1,9 @@
+import i18n from "@/localization";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
-import { Text } from "./Text";
 import { useTheme } from "@react-navigation/native";
 import { useCallback } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "./Text";
 
 interface ConnectionFieldProps {
     name?: string;
@@ -47,10 +48,10 @@ export default function ConnectionBadge({ name, address, connected = false, disa
             </View>
             <View style={styles.textWrapper}>
                 <Text style={[styles.title, connected && styles.textWhite]}>
-                    {name || "Unknown Device"}
+                    {name || i18n.t("bluetooth.unknownDevice")}
                 </Text>
                 <Text style={[styles.subtitle, connected && styles.textWhite]}>
-                    {address || "No address"}
+                    {address || i18n.t("bluetooth.unknownAddress")}
                 </Text>
             </View>
 
@@ -59,7 +60,7 @@ export default function ConnectionBadge({ name, address, connected = false, disa
             ) : canAction && (
                 <Pressable onPress={handlePress} disabled={!canConnect && !canDisconnect}>
                     <Text style={[styles.actionText, { color: connected ? colors.textError : colors.primary }]}>
-                        {connected ? "Putuskan" : "Hubungkan"}
+                        {connected ? i18n.t("bluetooth.disconnect") : i18n.t("bluetooth.connect")}
                     </Text>
                 </Pressable>
             )}

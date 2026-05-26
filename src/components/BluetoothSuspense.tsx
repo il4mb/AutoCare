@@ -1,9 +1,10 @@
+import i18n from "@/localization";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated, StyleSheet, View } from "react-native";
 import ClassicBT from "react-native-bluetooth-classic";
-import { ReactNode, useCallback, useEffect, useState, useRef } from "react";
-import { View, ActivityIndicator, StyleSheet, Animated } from "react-native";
-import { Text } from "./Text";
 import { Button } from "./Button";
+import { Text } from "./Text";
 
 interface BluetoothSuspenseProps {
     children?: ReactNode;
@@ -78,7 +79,7 @@ export default function BluetoothSuspense({ children }: BluetoothSuspenseProps) 
                 <View style={styles.loadingBox}>
                     <ActivityIndicator size="large" color="#3b82f6" />
                     <Text type="smallBold" style={styles.loadingText}>
-                        Memeriksa Bluetooth...
+                        {i18n.t("bluetooth.checkingBluetooth")}
                     </Text>
                 </View>
             </View>
@@ -107,17 +108,17 @@ export default function BluetoothSuspense({ children }: BluetoothSuspenseProps) 
 
                     {/* Text Content */}
                     <Text type="subtitle" style={styles.title}>
-                        Bluetooth Mati
+                        {i18n.t("bluetooth.bluetoothOff")}
                     </Text>
 
                     <Text type="default" style={styles.description}>
-                        Aktifkan Bluetooth untuk mulai memindai dan menghubungkan ke perangkat di sekitar Anda.
+                        {i18n.t("bluetooth.connectHint")}
                     </Text>
 
                     {/* Action Button */}
                     <View style={styles.buttonWrapper}>
                         <Button
-                            title={enabling ? "Memproses..." : "Aktifkan Bluetooth"}
+                            title={enabling ? i18n.t("bluetooth.processingInit") : i18n.t("bluetooth.enableBluetooth")}
                             onPress={enableBluetooth}
                             disabled={enabling}
                         />

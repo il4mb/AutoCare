@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
-import { View, Pressable, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
-import { Text } from '@/components/Text';
-import ScreenLayout from '@/components/ScreenLayout';
 import { Button } from '@/components/Button';
 import DiagnoseList from '@/components/diagnoses/DiagnoseList';
-import { db, Diagnose } from '@/database';
+import ScreenLayout from '@/components/ScreenLayout';
+import { Text } from '@/components/Text';
 import { useApp } from '@/contexts/AppProvider';
+import { db, Diagnose } from '@/database';
+import i18n from '@/localization';
 import { Q } from '@nozbe/watermelondb';
 
 export default function HomeScreen() {
@@ -47,7 +48,7 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 16, paddingVertical: 12 }}>
                 <View style={{ flex: 1 }}>
                     <Text type="title" style={{ marginBottom: 0 }}>
-                        Auto Care
+                        {i18n.t('home.title')}
                     </Text>
                 </View>
                 <Pressable onPress={gotoProfile}>
@@ -65,21 +66,21 @@ export default function HomeScreen() {
                 // 2. Tampilkan Welcome Screen jika data kosong
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, gap: 18, marginTop: -40 }}>
                     <Text type="title" style={{ marginBottom: 0 }}>
-                        Selamat datang di AutoCare!
+                        {i18n.t('home.welcomeTitle')}
                     </Text>
                     <Text style={{ color: '#888', textAlign: 'center' }}>
-                        Mulai dengan menghubungkan perangkat OBD-II Anda untuk melihat metrik kendaraan dan melakukan diagnosa.
+                        {i18n.t('home.welcomeDescription')}
                     </Text>
 
                     <Button
-                        title="Mulai Diagnosa"
+                        title={i18n.t('home.startDiagnose')}
                         onPress={gotoCreateDiagnose}
                         style={{ paddingHorizontal: 42, marginTop: 8 }}
                     />
 
                     <Pressable onPress={skipWelcome} style={{ padding: 8 }}>
                         <Text style={{ color: '#888', textDecorationLine: 'underline' }}>
-                            Lewati untuk sekarang
+                            {i18n.t('home.skipForNow')}
                         </Text>
                     </Pressable>
                 </View>
@@ -90,8 +91,8 @@ export default function HomeScreen() {
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <Text style={{ color: '#64748b', flex: 1 }}>
                             {isEmpty
-                                ? 'Belum ada data. Lakukan diagnosa pertama Anda.'
-                                : 'Riwayat diagnosa kendaraan Anda:'}
+                                ? i18n.t('home.emptyHistory')
+                                : i18n.t('home.historyTitle')}
                         </Text>
 
                         {/* Tombol kecil untuk diagnosa baru saat list tampil */}

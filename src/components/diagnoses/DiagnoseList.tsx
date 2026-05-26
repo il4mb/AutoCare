@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 
-import { Text } from "../Text"; // Sesuaikan path ini dengan struktur folder Anda
+import { useApp } from "@/contexts/AppProvider";
 import { db } from "@/database";
 import { Diagnose } from "@/database/model/Diagnose";
-import { useApp } from "@/contexts/AppProvider";
+import i18n from "@/localization";
 import { Q } from "@nozbe/watermelondb";
+import { Text } from "../Text"; // Sesuaikan path ini dengan struktur folder Anda
 
 export default function DiagnoseList() {
     const { auth } = useApp();
@@ -45,7 +46,7 @@ export default function DiagnoseList() {
     const renderItem = ({ item }: { item: Diagnose }) => {
         // Parsing data dari database
         const codes = item.codes ? item.codes.split(',').filter(Boolean) : [];
-        const modelName = item.model?.name || "Kendaraan Umum";
+        const modelName = item.model?.name || i18n.t("vehicle.currentVehicleFallback");
 
         // Format Tanggal (Contoh: 24 Mei 2026, 14:30)
         const dateString = item.createdAt
@@ -76,7 +77,7 @@ export default function DiagnoseList() {
                         ))
                     ) : (
                         <View style={[styles.codeBadge, styles.healthyBadge]}>
-                            <Text style={styles.healthyText}>SEHAT (0 DTC)</Text>
+                            <Text style={styles.healthyText}>{i18n.t("diagnose.healthyBadge")}</Text>
                         </View>
                     )}
                 </View>

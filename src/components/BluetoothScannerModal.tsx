@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Pressable, Modal, TextInput, FlatList, ActivityIndicator } from "react-native";
+import { Text } from "@/components/Text";
+import { useBluetooth } from "@/hooks/use-bluetooth";
+import i18n from "@/localization";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { useBluetooth } from "@/hooks/use-bluetooth";
-import { Text } from "@/components/Text";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 interface BluetoothScannerModalProps {
     visible: boolean;
@@ -54,7 +55,7 @@ export default function BluetoothScannerModal({
 
                         {/* HEADER */}
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Pilih Perangkat</Text>
+                            <Text style={styles.modalTitle}>{i18n.t("bluetooth.chooseDevice")}</Text>
                             <Pressable onPress={onClose} style={styles.closeBtn}>
                                 <MaterialCommunityIcons name="close" size={24} color="#333" />
                             </Pressable>
@@ -63,13 +64,13 @@ export default function BluetoothScannerModal({
                         {/* TAB SWITCHER */}
                         <View style={styles.tabContainer}>
                             <Pressable style={[styles.tabButton, activeTab === 'paired' && styles.tabActive]} onPress={() => setActiveTab('paired')}>
-                                <Text style={[styles.tabText, activeTab === 'paired' && styles.tabTextActive]}>Tersimpan</Text>
+                                <Text style={[styles.tabText, activeTab === 'paired' && styles.tabTextActive]}>{i18n.t("bluetooth.saved")}</Text>
                             </Pressable>
                             <Pressable style={[styles.tabButton, activeTab === 'scan' && styles.tabActive]} onPress={() => setActiveTab('scan')}>
-                                <Text style={[styles.tabText, activeTab === 'scan' && styles.tabTextActive]}>Pindai Baru</Text>
+                                <Text style={[styles.tabText, activeTab === 'scan' && styles.tabTextActive]}>{i18n.t("bluetooth.scanNew")}</Text>
                             </Pressable>
                             <Pressable style={[styles.tabButton, activeTab === 'manual' && styles.tabActive]} onPress={() => setActiveTab('manual')}>
-                                <Text style={[styles.tabText, activeTab === 'manual' && styles.tabTextActive]}>Manual</Text>
+                                <Text style={[styles.tabText, activeTab === 'manual' && styles.tabTextActive]}>{i18n.t("bluetooth.manual")}</Text>
                             </Pressable>
                         </View>
 
@@ -91,7 +92,7 @@ export default function BluetoothScannerModal({
                                                 </View>
                                             </Pressable>
                                         )}
-                                        ListEmptyComponent={<Text style={styles.emptyText}>Tidak ada perangkat tersimpan.</Text>}
+                                        ListEmptyComponent={<Text style={styles.emptyText}>{i18n.t("bluetooth.noSavedDevices")}</Text>}
                                     />
                                 )}
                             </View>
@@ -103,7 +104,7 @@ export default function BluetoothScannerModal({
                                 {isScanning && scannedDevices.length === 0 ? (
                                     <View style={styles.centerContent}>
                                         <ActivityIndicator size="large" color="#0252ff" />
-                                        <Text style={styles.scanText}>Mencari perangkat...</Text>
+                                        <Text style={styles.scanText}>{i18n.t("bluetooth.searching")}</Text>
                                     </View>
                                 ) : (
                                     <FlatList
@@ -118,11 +119,11 @@ export default function BluetoothScannerModal({
                                                 </View>
                                             </Pressable>
                                         )}
-                                        ListEmptyComponent={<Text style={styles.emptyText}>Tidak ada perangkat ditemukan.</Text>}
+                                        ListEmptyComponent={<Text style={styles.emptyText}>{i18n.t("bluetooth.noFound")}</Text>}
                                     />
                                 )}
                                 <Pressable style={styles.rescanButton} onPress={isScanning ? stopScan : startScan}>
-                                    <Text style={styles.rescanText}>{isScanning ? "Berhenti Pindai" : "Pindai Ulang"}</Text>
+                                    <Text style={styles.rescanText}>{isScanning ? i18n.t("bluetooth.stopScan") : i18n.t("bluetooth.scanAgain")}</Text>
                                 </Pressable>
                             </View>
                         )}
@@ -130,10 +131,10 @@ export default function BluetoothScannerModal({
                         {/* TAB KONTEN: MANUAL */}
                         {activeTab === 'manual' && (
                             <View style={styles.tabBody}>
-                                <Text style={styles.inputLabel}>MAC Address Bluetooth:</Text>
+                                <Text style={styles.inputLabel}>{i18n.t("bluetooth.macLabel")}</Text>
                                 <TextInput
                                     style={styles.textInput}
-                                    placeholder="Contoh: 00:1D:A5:02:03:57"
+                                    placeholder={i18n.t("bluetooth.macPlaceholder")}
                                     placeholderTextColor="#999"
                                     value={manualAddress}
                                     onChangeText={setManualAddress}
@@ -142,11 +143,11 @@ export default function BluetoothScannerModal({
                                 <Pressable
                                     style={[styles.submitButton, !manualAddress.trim() && styles.submitButtonDisabled]}
                                     onPress={() => {
-                                        onSelect(manualAddress.trim(), "Perangkat Manual");
+                                        onSelect(manualAddress.trim(), i18n.t("bluetooth.manualDevice"));
                                         setManualAddress("");
                                     }}
                                     disabled={!manualAddress.trim()}>
-                                    <Text style={styles.submitButtonText}>Hubungkan</Text>
+                                    <Text style={styles.submitButtonText}>{i18n.t("bluetooth.connect")}</Text>
                                 </Pressable>
                             </View>
                         )}

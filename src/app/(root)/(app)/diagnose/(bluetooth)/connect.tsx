@@ -1,18 +1,19 @@
-import ClassicBT, { BluetoothDevice } from "react-native-bluetooth-classic";
+import { Button } from "@/components/Button";
+import ConnectionBadge from "@/components/ConnectionBadge";
 import ScreenLayout from "@/components/ScreenLayout";
-import { View, StyleSheet, ActivityIndicator, ScrollView, Modal, BackHandler } from "react-native";
+import { Text } from "@/components/Text";
+import VehicleBrandSelect from "@/components/VehicleBrandSelect";
+import { useApp } from "@/contexts/AppProvider";
+import { useConnect } from "@/hooks/use-connect";
+import i18n from "@/localization";
+import { parseODBResponse } from "@/parser";
+import { createDiagnoseByCodeAndModel } from "@/services/DiagnoseService";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurTargetView, BlurView } from "expo-blur";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useConnect } from "@/hooks/use-connect";
-import { Text } from "@/components/Text";
-import ConnectionBadge from "@/components/ConnectionBadge";
-import { Button } from "@/components/Button";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { parseODBResponse } from "@/parser";
-import VehicleBrandSelect from "@/components/VehicleBrandSelect";
-import { BlurTargetView, BlurView } from "expo-blur";
-import { createDiagnoseByCodeAndModel } from "@/services/DiagnoseService";
-import { useApp } from "@/contexts/AppProvider";
+import { ActivityIndicator, BackHandler, Modal, ScrollView, StyleSheet, View } from "react-native";
+import ClassicBT from "react-native-bluetooth-classic";
 
 type ConnectParams = {
     name: string;
@@ -50,12 +51,12 @@ export default function ConnectScreen() {
 
             console.log("Memulai Inisialisasi...");
             await ClassicBT.readFromDevice(address).catch(() => { });
-            await connect.request("ATZ");
-            await connect.request("ATE0");
-            await connect.request("ATL0");
-            await connect.request("ATSP0");
-            await connect.request("0100");
-            const rawCode = await connect.request("03");
+            await connect.request("ATZ"); // reset device
+            await connect.request("ATE0"); // echo off
+            await connect.request("ATL0"); // linefeed off
+            await connect.request("ATSP0"); // auto protocol
+            await connect.request("0100"); // request supported PIDs to check if connection is valid and get ready for next commands
+            const rawCode = await connect.request("03"); // request DTC codes
             const dtcCodes = parseODBResponse(rawCode);
 
             if (dtcCodes.length === 0) {
@@ -67,7 +68,7 @@ export default function ConnectScreen() {
             console.log("✅ Semua data inisialisasi berhasil diproses!");
             console.log("DTC:", parseODBResponse(rawCode));
             const diagnose = await createDiagnoseByCodeAndModel(dtcCodes, model, auth.id);
-            if(!diagnose) {
+            if (!diagnose) {
                 console.warn("⚠️ Diagnosa gagal dibuat, tetapi kode DTC ditemukan. Menampilkan hasil DTC mentah.");
                 setShowDTCNotFound(true);
                 return;
@@ -112,9 +113,9 @@ export default function ConnectScreen() {
             return (
                 <View style={styles.statusInner}>
                     <ActivityIndicator size="large" color="#0252ff" style={styles.statusIcon} />
-                    <Text type="subtitle" style={styles.statusTitle}>Menghubungkan...</Text>
+                    <Text type="subtitle" style={styles.statusTitle}>{i18n.t("bluetooth.connecting")}</Text>
                     <Text type="small" style={styles.statusDesc}>
-                        Membangun koneksi ke {name}
+                        {i18n.t("bluetooth.connecting")} {name}
                     </Text>
                 </View>
             );
@@ -126,7 +127,7 @@ export default function ConnectScreen() {
                     <View style={[styles.iconCircle, styles.iconCircleError]}>
                         <MaterialCommunityIcons name="bluetooth-off" size={32} color="#ef4444" />
                     </View>
-                    <Text type="subtitle" style={styles.statusTitle}>Koneksi Gagal</Text>
+                    <Text type="subtitle" style={styles.statusTitle}>{i18n.t("bluetooth.connectionFailed")}</Text>
                     <Text type="small" style={[styles.statusDesc, styles.textError]}>
                         {connect.error}
                     </Text>
@@ -141,9 +142,9 @@ export default function ConnectScreen() {
                         <MaterialCommunityIcons name="check-circle" size={24} color="#10b981" />
                     </View>
                     <View style={styles.compactTextContainer}>
-                        <Text type="subtitle" style={styles.statusTitleCompact}>Terhubung!</Text>
+                        <Text type="subtitle" style={styles.statusTitleCompact}>{i18n.t("bluetooth.connected")}</Text>
                         <Text type="small" style={styles.statusDescCompact}>
-                            Perangkat siap digunakan.
+                            {i18n.t("bluetooth.readyToUse")}
                         </Text>
                     </View>
                 </View>
@@ -155,9 +156,9 @@ export default function ConnectScreen() {
                 <View style={[styles.iconCircle, styles.iconCircleIdle]}>
                     <MaterialCommunityIcons name="bluetooth-connect" size={32} color="#64748b" />
                 </View>
-                <Text type="subtitle" style={styles.statusTitle}>Menunggu Koneksi</Text>
+                <Text type="subtitle" style={styles.statusTitle}>{i18n.t("bluetooth.waitingConnection")}</Text>
                 <Text type="small" style={styles.statusDesc}>
-                    Ketuk tombol hubungkan pada badge di atas.
+                    {i18n.t("bluetooth.connectHint")}
                 </Text>
             </View>
         );
@@ -180,7 +181,7 @@ export default function ConnectScreen() {
                         <VehicleBrandSelect onChange={(brand) => setModel(brand)} />
                         {!model && (
                             <Text type="small" style={{ color: "#64748b", marginTop: 8 }}>
-                                Pilih merek kendaraan untuk hasil diagnosa yang lebih akurat.
+                                {i18n.t("bluetooth.selectBrandHint")}
                             </Text>
                         )}
                     </View>
@@ -191,7 +192,7 @@ export default function ConnectScreen() {
                         <View style={styles.diagnosticsContainer}>
                             <View style={styles.terminalContainer}>
                                 <View style={styles.terminalHeader}>
-                                    <Text style={styles.terminalTitle}>OBD-II Console</Text>
+                                        <Text style={styles.terminalTitle}>{i18n.t("bluetooth.obdConsoleTitle")}</Text>
                                     <View style={styles.terminalDots}>
                                         <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
                                         <View style={[styles.dot, { backgroundColor: '#eab308' }]} />
@@ -205,7 +206,7 @@ export default function ConnectScreen() {
                                     contentContainerStyle={{ paddingBottom: 80 }}
                                     onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
                                     {(!connect.commandLogs || connect.commandLogs.length === 0) ? (
-                                        <Text style={styles.terminalPlaceholder}>Menunggu aktivitas data...</Text>
+                                        <Text style={styles.terminalPlaceholder}>{i18n.t("bluetooth.waitingActivity")}</Text>
                                     ) : (connect.commandLogs.map((log) => (
                                         <View key={log.id} style={styles.logRow}>
                                             <Text style={[styles.logIcon, { color: log.type === 'TX' ? '#38bdf8' : '#34d399' }]}>
@@ -223,7 +224,7 @@ export default function ConnectScreen() {
                 </View>
                 <View style={styles.footer}>
                     <Button
-                        title={isDiagnosing ? "Memproses Inisialisasi..." : "Mulai Diagnosa"}
+                        title={isDiagnosing ? i18n.t("bluetooth.processingInit") : i18n.t("bluetooth.startDiagnosis")}
                         disabled={!connect.connected || connect.connecting || isDiagnosing || !model}
                         onPress={sendTestData}
                     />
@@ -244,13 +245,13 @@ export default function ConnectScreen() {
                             <MaterialCommunityIcons name="check-circle" size={48} color="#10b981" />
                             <View style={{ alignItems: "center", gap: 0, marginBottom: 8 }}>
                                 <Text type="subtitle" style={styles.statusTitle}>
-                                    Tidak Ditemukan Kode DTC
+                                    {i18n.t("bluetooth.noDtcFoundTitle")}
                                 </Text>
                                 <Text type="small" style={{ color: "#475569", textAlign: "center" }}>
-                                    Tidak ditemukan kode DTC pada kendaraan Anda. Kemungkinan besar tidak ada masalah yang terdeteksi.
+                                    {i18n.t("bluetooth.noDtcFoundDescription")}
                                 </Text>
                             </View>
-                            <Button title="Kembali" onPress={goBack} />
+                            <Button title={i18n.t("common.back")} onPress={goBack} />
                         </View>
                     </View>
                 </BlurView>

@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Print from 'expo-print'; // Import expo-print
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
+import { Button } from "@/components/Button";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button";
-import { Diagnose } from "@/database/model/Diagnose";
 import { db } from "@/database";
+import { Diagnose } from "@/database/model/Diagnose";
+import i18n from "@/localization";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ResultScreen() {
@@ -24,7 +25,7 @@ export default function ResultScreen() {
     // 1. Observer WatermelonDB
     useEffect(() => {
         if (!id) {
-            setError("ID Diagnosa tidak valid.");
+            setError(i18n.t("diagnose.invalidId"));
             setIsLoading(false);
             return;
         }
@@ -37,7 +38,7 @@ export default function ResultScreen() {
             },
             error: (err) => {
                 console.error("Error observing diagnose:", err);
-                setError("Gagal memuat hasil diagnosa dari database lokal.");
+                setError(i18n.t("diagnose.errorDescription"));
                 setIsLoading(false);
             }
         });
@@ -70,11 +71,11 @@ export default function ResultScreen() {
             // Membuat template HTML untuk PDF
             const htmlContent = `
             <!DOCTYPE html>
-            <html lang="id">
+            <html lang="${i18n.locale}">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Laporan Diagnosa Kendaraan</title>
+                <title>${i18n.t("diagnose.print.reportTitle")}</title>
                 <style>
                     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
                     .header { text-align: center; border-bottom: 2px solid #0252ff; padding-bottom: 20px; margin-bottom: 30px; }
@@ -91,10 +92,10 @@ export default function ResultScreen() {
             </head>
             <body>
                 <div class="header">
-                    <h1>Laporan Diagnosa AutoCare</h1>
-                    <p>ID Referensi: ${diagnose.id}</p>
-                    <p>Model Kendaraan: ${diagnose.model ? diagnose.model.name : "Tidak terdeteksi"}</p>
-                    <p>Tanggal: ${new Date(diagnose.createdAt).toLocaleString('id-ID')}</p>
+                    <h1>${i18n.t("diagnose.print.reportTitle")}</h1>
+                    <p>${i18n.t("diagnose.print.referenceId")}: ${diagnose.id}</p>
+                    <p>${i18n.t("diagnose.print.vehicleModel")}: ${diagnose.model ? diagnose.model.name : i18n.t("diagnose.modelUnavailable")}</p>
+                    <p>${i18n.t("diagnose.print.date")}: ${new Date(diagnose.createdAt).toLocaleString(i18n.locale === "id" ? "id-ID" : "en-US")}</p>
                 </div>
 
                 ${knownCodes.map(code => `
@@ -104,19 +105,19 @@ export default function ResultScreen() {
                         
                         ${diagnose?.symptoms?.[code] ? `
                         <div class="section">
-                            <div class="section-title">Gejala yang Timbul</div>
+                            <div class="section-title">${i18n.t("diagnose.sections.symptom")}</div>
                             <p class="section-content">${diagnose.symptoms[code]}</p>
                         </div>` : ''}
                         
                         ${diagnose?.causes?.[code] ? `
                         <div class="section">
-                            <div class="section-title">Kemungkinan Penyebab</div>
+                            <div class="section-title">${i18n.t("diagnose.sections.cause")}</div>
                             <p class="section-content">${diagnose.causes[code]}</p>
                         </div>` : ''}
                         
                         ${diagnose?.solutions?.[code] ? `
                         <div class="section">
-                            <div class="section-title">Solusi / Perbaikan</div>
+                            <div class="section-title">${i18n.t("diagnose.sections.solution")}</div>
                             <p class="section-content">${diagnose.solutions[code]}</p>
                         </div>` : ''}
                     </div>
@@ -124,7 +125,7 @@ export default function ResultScreen() {
 
                 ${unknownCodes.length > 0 ? `
                     <div class="unknown-section">
-                        <strong>Informasi Tambahan:</strong> Terdapat kode lain yang terdeteksi namun belum terdaftar di database kami: 
+                        <strong>${i18n.t("diagnose.print.additionalInfo")}:</strong> ${i18n.t("diagnose.print.unknownCodes")} 
                         <span style="color: #d97706; font-weight: bold;">${unknownCodes.join(', ')}</span>
                     </div>
                 ` : ''}
@@ -137,7 +138,7 @@ export default function ResultScreen() {
             
         } catch (err) {
             console.error("Gagal membuat PDF:", err);
-            Alert.alert("Gagal", "Terjadi kesalahan saat membuat dokumen PDF.");
+            Alert.alert(i18n.t("diagnose.errorTitle"), i18n.t("diagnose.print.printError"));
         } finally {
             setIsPrinting(false);
         }
@@ -167,8 +168,8 @@ export default function ResultScreen() {
             <ScreenLayout applyInsets style={styles.container}>
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color="#0252ff" />
-                    <Text style={styles.loadingText}>Memuat Data...</Text>
-                    <Text style={styles.loadingSubText}>Mengambil riwayat diagnosa dari memori perangkat.</Text>
+                    <Text style={styles.loadingText}>{i18n.t("diagnose.loadingTitle")}</Text>
+                    <Text style={styles.loadingSubText}>{i18n.t("diagnose.loadingDescription")}</Text>
                 </View>
             </ScreenLayout>
         );
@@ -182,9 +183,9 @@ export default function ResultScreen() {
                     <View style={[styles.iconCircle, styles.iconCircleError]}>
                         <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#ef4444" />
                     </View>
-                    <Text type="title" style={styles.errorTitle}>Terjadi Kesalahan</Text>
+                    <Text type="title" style={styles.errorTitle}>{i18n.t("diagnose.errorTitle")}</Text>
                     <Text style={styles.errorText}>{error}</Text>
-                    <Button title="Kembali" onPress={() => router.back()} style={{ marginTop: 24 }} />
+                    <Button title={i18n.t("diagnose.back")} onPress={() => router.back()} style={{ marginTop: 24 }} />
                 </View>
             </ScreenLayout>
         );
@@ -198,12 +199,12 @@ export default function ResultScreen() {
                     <View style={[styles.iconCircle, styles.iconCircleSuccess]}>
                         <MaterialCommunityIcons name="check-decagram" size={64} color="#10b981" />
                     </View>
-                    <Text type="title" style={styles.healthyTitle}>Kendaraan Sehat!</Text>
+                    <Text type="title" style={styles.healthyTitle}>{i18n.t("diagnose.healthyTitle")}</Text>
                     <Text style={styles.healthyText}>
-                        Tidak ditemukan riwayat kode kerusakan (DTC) pada sesi ini.
+                        {i18n.t("diagnose.healthyDescription")}
                     </Text>
                     <Button
-                        title="Kembali ke Beranda"
+                        title={i18n.t("diagnose.backHome")}
                         onPress={() => router.replace("/home")}
                         style={{ marginTop: 32, width: '100%' }}
                     />
@@ -220,9 +221,9 @@ export default function ResultScreen() {
                     <View style={[styles.iconCircle, styles.iconCircleWarning]}>
                         <MaterialCommunityIcons name="database-search-outline" size={48} color="#f59e0b" />
                     </View>
-                    <Text type="title" style={styles.warningTitle}>Kode Belum Terdaftar</Text>
+                    <Text type="title" style={styles.warningTitle}>{i18n.t("diagnose.unknownCodeTitle")}</Text>
                     <Text style={styles.warningText}>
-                        Sistem mendeteksi adanya kerusakan, namun detail untuk kode di bawah ini belum tersedia pada database kami:
+                        {i18n.t("diagnose.unknownCodeDescription")}
                     </Text>
 
                     <View style={styles.unknownCodesWrapper}>
@@ -234,7 +235,7 @@ export default function ResultScreen() {
                     </View>
 
                     <Button
-                        title="Kembali ke Beranda"
+                        title={i18n.t("diagnose.backHome")}
                         onPress={() => router.replace("/home")}
                         style={{ marginTop: 32, width: '100%' }}
                     />
@@ -247,15 +248,15 @@ export default function ResultScreen() {
     return (
         <ScreenLayout applyInsets style={styles.container}>
             <View style={styles.header}>
-                <Text type="title" style={styles.headerTitle}>Hasil Diagnosa</Text>
+                <Text type="title" style={styles.headerTitle}>{i18n.t("diagnose.resultTitle")}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <MaterialCommunityIcons name="car-info" size={28} color="#10b981" />
                     <Text style={{ color: "#0c3527", fontWeight: "600" }}>
-                        {diagnose?.model ? `${diagnose.model.name}` : "Model tidak terdeteksi"}
+                        {diagnose?.model ? `${diagnose.model.name}` : i18n.t("diagnose.modelUnavailable")}
                     </Text>
                 </View>
                 <Text style={styles.headerSubtitle}>
-                    Ditemukan {knownCodes.length} informasi kerusakan.
+                    {i18n.t("diagnose.foundInfo").replace("{count}", String(knownCodes.length))}
                 </Text>
             </View>
 
@@ -278,9 +279,9 @@ export default function ResultScreen() {
                             {desc && <Text style={styles.cardDescription}>{desc}</Text>}
                             <View style={styles.divider} />
 
-                            {renderListSection("Gejala yang Timbul", "alert-circle-outline", symptom, "#f59e0b")}
-                            {renderListSection("Kemungkinan Penyebab", "magnify-scan", cause, "#ef4444")}
-                            {renderListSection("Solusi / Perbaikan", "wrench-outline", solution, "#10b981")}
+                            {renderListSection(i18n.t("diagnose.sections.symptom"), "alert-circle-outline", symptom, "#f59e0b")}
+                            {renderListSection(i18n.t("diagnose.sections.cause"), "magnify-scan", cause, "#ef4444")}
+                            {renderListSection(i18n.t("diagnose.sections.solution"), "wrench-outline", solution, "#10b981")}
                         </View>
                     );
                 })}
@@ -289,10 +290,10 @@ export default function ResultScreen() {
                     <View style={styles.unknownCard}>
                         <View style={styles.unknownCardHeader}>
                             <MaterialCommunityIcons name="information-outline" size={20} color="#f59e0b" />
-                            <Text style={styles.unknownCardTitle}>Informasi Tambahan</Text>
+                            <Text style={styles.unknownCardTitle}>{i18n.t("diagnose.sections.additional")}</Text>
                         </View>
                         <Text style={styles.unknownCardDesc}>
-                            Terdapat kode lain yang terdeteksi namun belum terdaftar di database kami:
+                            {i18n.t("diagnose.print.unknownCodes")}
                         </Text>
                         <View style={[styles.unknownCodesWrapper, { marginTop: 12 }]}>
                             {unknownCodes.map((code, index) => (
@@ -305,7 +306,7 @@ export default function ResultScreen() {
                 )}
 
                 <Button
-                    title="Selesai"
+                    title={i18n.t("diagnose.finish")}
                     onPress={() => router.replace("/home")}
                     style={styles.finishButton}
                 />

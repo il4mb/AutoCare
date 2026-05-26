@@ -1,9 +1,10 @@
 import { useApp } from "@/contexts/AppProvider";
+import i18n from "@/localization";
+import { router } from "expo-router";
 import { useMemo } from "react";
 import { View } from "react-native";
-import { Text } from "./Text";
 import { Button } from "./Button";
-import { router } from "expo-router";
+import { Text } from "./Text";
 
 interface VehicleSuspensionProps {
     children?: React.ReactNode;
@@ -20,17 +21,17 @@ export default function VehicleSuspension({ children }: VehicleSuspensionProps) 
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, gap: 20 }}>
                 <Text type="title">
-                    Selamat Datang di AutoCare
+                    {i18n.t("vehicle.welcomeTitle")}
                 </Text>
                 <View>
                     <Text type="small" style={{ marginBottom: 12 }}>
-                        Untuk memulai, silakan tambahkan kendaraan Anda di menu Garasi.
+                        {i18n.t("vehicle.welcomeDescription")}
                     </Text>
                     <Text type="small">
-                        Atau dengan menekan tombol di bawah ini:
+                        {i18n.t("vehicle.welcomeDescriptionAlt")}
                     </Text>
                     <Button
-                        title="Tambah Kendaraan"
+                        title={i18n.t("vehicle.addVehicle")}
                         onPress={goToAddVehicle}
                         style={{ marginTop: 16 }} />
                 </View>

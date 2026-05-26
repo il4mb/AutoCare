@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
 import { useBluetooth } from "@/hooks/use-bluetooth";
-import { BluetoothDevice } from "react-native-bluetooth-classic";
+import i18n from "@/localization";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { BluetoothDevice } from "react-native-bluetooth-classic";
 
 export default function DiagnoseScreen() {
 
@@ -23,7 +24,7 @@ export default function DiagnoseScreen() {
             </View>
             <View style={styles.deviceInfo}>
                 <Text type="default" style={styles.deviceName}>
-                    {device.name || "Perangkat Tidak Dikenal"}
+                    {device.name || i18n.t("bluetooth.unknownDevice")}
                 </Text>
                 <Text type="small" style={styles.deviceAddress}>
                     {device.address}
@@ -46,10 +47,10 @@ export default function DiagnoseScreen() {
 
                 <View style={styles.header}>
                     <Text type="title" style={styles.headerTitle}>
-                        Pilih Perangkat
+                        {i18n.t("bluetooth.chooseDevice")}
                     </Text>
                     <Text type="small" style={styles.headerSubtitle}>
-                        Hubungkan ke perangkat OBD/Sensor untuk memulai diagnosa.
+                        {i18n.t("bluetooth.selectBrandHint")}
                     </Text>
                 </View>
 
@@ -58,7 +59,7 @@ export default function DiagnoseScreen() {
                     contentContainerStyle={styles.scrollContent}
                     refreshControl={<RefreshControl refreshing={bt.isLoadingPaired && !bt.isScanning} onRefresh={bt.fetchPairedDevices} colors={["#0252ff"]} />}>
                     <View style={styles.section}>
-                        <Text type="smallBold" style={styles.sectionTitle}>TERSIMPAN SEBELUMNYA</Text>
+                        <Text type="smallBold" style={styles.sectionTitle}>{i18n.t("bluetooth.saved")}</Text>
 
                         {bt.isLoadingPaired ? (
                             <ActivityIndicator size="small" color="#0252ff" style={styles.loader} />
@@ -66,14 +67,14 @@ export default function DiagnoseScreen() {
                             <DeviceCard key={device.address} device={device} isSaved={true} />
                         ))) : (
                             <View style={styles.emptyState}>
-                                <Text type="small" style={styles.emptyText}>Belum ada perangkat yang tersimpan.</Text>
+                                <Text type="small" style={styles.emptyText}>{i18n.t("bluetooth.noSavedDevices")}</Text>
                             </View>
                         )}
                     </View>
 
                     <View style={styles.section}>
                         <View style={styles.sectionHeaderRow}>
-                            <Text type="smallBold" style={styles.sectionTitle}>PERANGKAT TERSEDIA</Text>
+                            <Text type="smallBold" style={styles.sectionTitle}>{i18n.t("bluetooth.scanNew")}</Text>
                             <Pressable
                                 onPress={bt.isScanning ? bt.stopScan : bt.startScan}
                                 style={styles.scanActionBtn}>
@@ -83,7 +84,7 @@ export default function DiagnoseScreen() {
                                     <MaterialCommunityIcons name="refresh" size={20} color="#0252ff" />
                                 )}
                                 <Text type="smallBold" style={styles.scanActionText}>
-                                    {bt.isScanning ? "Memindai..." : "Pindai"}
+                                    {bt.isScanning ? i18n.t("bluetooth.searching") : i18n.t("diagnose.scan")}
                                 </Text>
                             </Pressable>
                         </View>
@@ -97,9 +98,9 @@ export default function DiagnoseScreen() {
                         ))) : (
                             <View style={styles.emptyState}>
                                 {bt.isScanning ? (
-                                    <Text type="small" style={styles.emptyText}>Mencari perangkat di sekitar Anda...</Text>
+                                    <Text type="small" style={styles.emptyText}>{i18n.t("bluetooth.searching")}</Text>
                                 ) : (
-                                    <Text type="small" style={styles.emptyText}>Ketuk "Pindai" untuk mencari perangkat baru.</Text>
+                                    <Text type="small" style={styles.emptyText}>{i18n.t("diagnose.scanPrompt")}</Text>
                                 )}
                             </View>
                         )}

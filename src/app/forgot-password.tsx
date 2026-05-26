@@ -3,6 +3,7 @@ import { Button } from "@/components/Button";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import { View } from "@/components/View";
+import i18n from "@/localization";
 import { useState } from "react";
 
 export default function ForgotPasswordScreen() {
@@ -13,7 +14,7 @@ export default function ForgotPasswordScreen() {
 
     const handleSendResetLink = async () => {
         if (!email.trim()) {
-            setInfo({ type: "error", message: "Email tidak boleh kosong." });
+            setInfo({ type: "error", message: i18n.t("forgotPassword.errors.requiredEmail") });
             return;
         }
         setSending(true);
@@ -22,14 +23,14 @@ export default function ForgotPasswordScreen() {
             // Asumsi endpoint untuk reset password adalah /auth/forgot-password
             const response = await api.post("/auth/forgot-password", { email });
             if (response.status === 200) {
-                setInfo({ type: "success", message: "Tautan reset telah dikirim ke email Anda (jika email terdaftar)." });
+                setInfo({ type: "success", message: i18n.t("forgotPassword.success") });
                 return;
             } else {
-                setInfo({ type: "error", message: "Gagal mengirim tautan reset. Silakan coba lagi." });
+                setInfo({ type: "error", message: i18n.t("forgotPassword.errors.sendFailed") });
             }
         } catch (e: any) {
             console.error("Error sending reset link:", e);
-            const errorMsg = e.response?.data?.message || "Koneksi ke server gagal. Silakan coba lagi.";
+            const errorMsg = e.response?.data?.message || i18n.t("forgotPassword.errors.networkError");
             setInfo({ type: "error", message: errorMsg });
         } finally {
             setSending(false);
@@ -38,10 +39,10 @@ export default function ForgotPasswordScreen() {
 
     return (
         <View style={{ flex: 1, justifyContent: "center", padding: 20, gap: 12 }}>
-            <Text type="title">Lupa Kata Sandi</Text>
-            <Text>Masukkan alamat email Anda dan kami akan mengirimkan tautan untuk mereset kata sandi Anda.</Text>
+            <Text type="title">{i18n.t("forgotPassword.title")}</Text>
+            <Text>{i18n.t("forgotPassword.subtitle")}</Text>
             <TextField
-                label="Alamat Email"
+                label={i18n.t("forgotPassword.emailPlaceholder")}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -54,7 +55,7 @@ export default function ForgotPasswordScreen() {
                 </Text>
             )}
             <Button
-                title="Kirim Tautan Reset"
+                title={i18n.t("forgotPassword.button")}
                 disabled={sending}
                 loading={sending}
                 onPress={handleSendResetLink} />

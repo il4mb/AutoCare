@@ -1,21 +1,22 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    View,
-    StyleSheet,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
-    Keyboard,
     ScrollView,
-    TouchableOpacity
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useRouter } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import api from "@/api";
 import { Button } from "@/components/Button";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
+import i18n from "@/localization";
 
 export default function SignUpScreen() {
     const router = useRouter();
@@ -34,14 +35,13 @@ export default function SignUpScreen() {
     }
 
     const handleSignUp = async () => {
-        // Validasi input kosong
         if (!data.name.trim() || !data.email.trim() || !data.password.trim()) {
-            setError("Semua kolom (Nama, Email, Password) wajib diisi.");
+            setError(i18n.t("signup.errors.requiredFields"));
             return;
         }
 
         if (data.password.length < 6) {
-            setError("Kata sandi minimal harus 6 karakter.");
+            setError(i18n.t("signup.errors.passwordTooShort"));
             return;
         }
 
@@ -50,16 +50,14 @@ export default function SignUpScreen() {
         Keyboard.dismiss();
 
         try {
-            // Asumsi endpoint untuk register adalah /auth/register
             const response = await api.post("/auth/register", data);
             if (response.status === 200 || response.status === 201) {
                 router.replace("/home");
             } else {
-                setError("Gagal mendaftar. Silakan coba lagi.");
+                setError(i18n.t("signup.errors.signUpFailed"));
             }
         } catch (e: any) {
-            // Tampilkan pesan spesifik jika server mengirimkan pesan error (misal: Email sudah terdaftar)
-            const errorMsg = e.response?.data?.message || "Koneksi ke server gagal. Silakan coba lagi.";
+            const errorMsg = e.response?.data?.message || i18n.t("signup.errors.networkError");
             setError(errorMsg);
         } finally {
             setLoading(false);
@@ -82,9 +80,9 @@ export default function SignUpScreen() {
                         <View style={styles.iconContainer}>
                             <MaterialCommunityIcons name="account-plus-outline" size={48} color="#0252ff" />
                         </View>
-                        <Text type="title" style={styles.title}>Buat Akun Baru</Text>
+                        <Text type="title" style={styles.title}>{i18n.t("signup.title")}</Text>
                         <Text style={styles.subtitle}>
-                            Daftar untuk mulai mendiagnosa kendaraan Anda secara cerdas
+                            {i18n.t("signup.subtitle")}
                         </Text>
                     </View>
 
@@ -97,14 +95,14 @@ export default function SignUpScreen() {
 
                     <View style={styles.formContainer}>
                         <TextField
-                            label="Nama Lengkap"
+                            label={i18n.t("signup.namePlaceholder")}
                             value={data.name}
                             onChangeText={(text) => updateData("name", text)}
                             autoCapitalize="words"
                             autoCorrect={false}
                         />
                         <TextField
-                            label="Alamat Email"
+                            label={i18n.t("signup.emailPlaceholder")}
                             value={data.email}
                             onChangeText={(text) => updateData("email", text)}
                             keyboardType="email-address"
@@ -112,14 +110,14 @@ export default function SignUpScreen() {
                             autoCorrect={false}
                         />
                         <TextField
-                            label="Kata Sandi"
+                            label={i18n.t("signup.passwordPlaceholder")}
                             value={data.password}
                             onChangeText={(text) => updateData("password", text)}
                             secureTextEntry
                         />
 
                         <Button
-                            title={loading ? "Memproses..." : "Daftar Sekarang"}
+                            title={loading ? i18n.t("signup.loading") : i18n.t("signup.button")}
                             onPress={handleSignUp}
                             disabled={loading}
                             style={styles.submitButton}
@@ -127,9 +125,9 @@ export default function SignUpScreen() {
                     </View>
 
                     <View style={styles.footerContainer}>
-                        <Text style={styles.footerText}>Sudah punya akun? </Text>
+                        <Text style={styles.footerText}>{i18n.t("signup.footerText")}</Text>
                         <TouchableOpacity onPress={() => router.replace("/sign-in")} disabled={loading}>
-                            <Text style={styles.footerLink}>Masuk di sini</Text>
+                            <Text style={styles.footerLink}>{i18n.t("signup.footerLink")}</Text>
                         </TouchableOpacity>
                     </View>
 

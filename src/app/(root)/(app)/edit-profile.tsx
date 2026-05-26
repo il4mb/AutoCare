@@ -1,22 +1,23 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    View,
-    StyleSheet,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
-    Keyboard,
     ScrollView,
-    TouchableOpacity
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useRouter } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import api from "@/api";
-import { useApp } from "@/contexts/AppProvider"; // Sesuaikan path jika berbeda
 import { Button } from "@/components/Button";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
+import { useApp } from "@/contexts/AppProvider"; // Sesuaikan path jika berbeda
+import i18n from "@/localization";
 
 export default function EditProfileScreen() {
     const router = useRouter();
@@ -36,20 +37,18 @@ export default function EditProfileScreen() {
     };
 
     const handleSave = async () => {
-        // 1. Validasi Nama
         if (!data.name.trim()) {
-            setInfo({ type: "error", message: "Nama lengkap tidak boleh kosong." });
+            setInfo({ type: "error", message: i18n.t("editProfile.errors.nameRequired") });
             return;
         }
 
-        // 2. Validasi Kata Sandi (Jika diisi)
         if (data.password) {
             if (data.password.length < 6) {
-                setInfo({ type: "error", message: "Kata sandi baru minimal 6 karakter." });
+                setInfo({ type: "error", message: i18n.t("editProfile.errors.passwordTooShort") });
                 return;
             }
             if (data.password !== data.confirmPassword) {
-                setInfo({ type: "error", message: "Konfirmasi kata sandi tidak cocok." });
+                setInfo({ type: "error", message: i18n.t("editProfile.errors.passwordMismatch") });
                 return;
             }
         }
@@ -59,28 +58,24 @@ export default function EditProfileScreen() {
         Keyboard.dismiss();
 
         try {
-            // Siapkan payload, password hanya dikirim jika diisi
             const payload: any = { name: data.name };
             if (data.password) {
                 payload.password = data.password;
             }
 
-            // Asumsi endpoint untuk update profil adalah PUT /auth/me
             const response = await api.put("/auth/me", payload);
 
             if (response.status === 200 || response.status === 201) {
-                // Perbarui state global agar nama di UI lain ikut berubah
                 await refreshAuth();
 
-                setInfo({ type: "success", message: "Profil berhasil diperbarui!" });
+                setInfo({ type: "success", message: i18n.t("editProfile.success") });
 
-                // Kosongkan kembali field password setelah sukses
                 setData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
             } else {
-                setInfo({ type: "error", message: "Gagal memperbarui profil. Silakan coba lagi." });
+                setInfo({ type: "error", message: i18n.t("editProfile.errors.saveFailed") });
             }
         } catch (e: any) {
-            const errorMsg = e.response?.data?.message || "Koneksi ke server gagal. Silakan coba lagi.";
+            const errorMsg = e.response?.data?.message || i18n.t("editProfile.errors.networkError");
             setInfo({ type: "error", message: errorMsg });
         } finally {
             setLoading(false);
@@ -94,8 +89,8 @@ export default function EditProfileScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <MaterialCommunityIcons name="arrow-left" size={24} color="#0f172a" />
                 </TouchableOpacity>
-                <Text type="title" style={styles.appBarTitle}>Edit Profil</Text>
-                <View style={{ width: 40 }} /> {/* Spacer agar judul di tengah */}
+                <Text type="title" style={styles.appBarTitle}>{i18n.t("editProfile.title")}</Text>
+                <View style={{ width: 40 }} />
             </View>
 
             <KeyboardAvoidingView
@@ -112,7 +107,7 @@ export default function EditProfileScreen() {
                             <MaterialCommunityIcons name="account-edit-outline" size={48} color="#0252ff" />
                         </View>
                         <Text style={styles.subtitle}>
-                            Perbarui informasi profil atau ubah kata sandi Anda.
+                            {i18n.t("editProfile.subtitle")}
                         </Text>
                     </View>
 
@@ -138,15 +133,15 @@ export default function EditProfileScreen() {
 
                     <View style={styles.formContainer}>
                         <View style={styles.disabledInputContainer}>
-                            <Text style={styles.inputLabel}>Alamat Email</Text>
+                            <Text style={styles.inputLabel}>{i18n.t("editProfile.emailLabel")}</Text>
                             <View style={styles.disabledInputWrapper}>
                                 <MaterialCommunityIcons name="email-lock" size={20} color="#94a3b8" />
                                 <Text style={styles.disabledInputText}>{auth?.email}</Text>
                             </View>
-                            <Text style={styles.helperText}>Email tidak dapat diubah.</Text>
+                            <Text style={styles.helperText}>{i18n.t("editProfile.emailHelper")}</Text>
                         </View>
                         <TextField
-                            label="Nama Lengkap"
+                            label={i18n.t("editProfile.nameLabel")}
                             value={data.name}
                             onChangeText={(text) => updateData("name", text)}
                             autoCapitalize="words"
@@ -154,21 +149,21 @@ export default function EditProfileScreen() {
                         />
 
                         <View style={styles.divider} />
-                        <Text style={styles.sectionLabel}>Ubah Kata Sandi (Opsional)</Text>
+                        <Text style={styles.sectionLabel}>{i18n.t("editProfile.passwordSection")}</Text>
                         <TextField
-                            label="Kata Sandi Baru"
+                            label={i18n.t("editProfile.newPassword")}
                             value={data.password}
                             onChangeText={(text) => updateData("password", text)}
                             secureTextEntry
                         />
                         <TextField
-                            label="Konfirmasi Kata Sandi"
+                            label={i18n.t("editProfile.confirmPassword")}
                             value={data.confirmPassword}
                             onChangeText={(text) => updateData("confirmPassword", text)}
                             secureTextEntry
                         />
                         <Button
-                            title={loading ? "Menyimpan..." : "Simpan Perubahan"}
+                            title={loading ? i18n.t("editProfile.saving") : i18n.t("editProfile.save")}
                             onPress={handleSave}
                             disabled={loading}
                             style={styles.submitButton}

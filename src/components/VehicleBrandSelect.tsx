@@ -1,10 +1,11 @@
 import { useVehicleBrands } from "@/hooks/use-vehicle-brands";
-import { View } from "./View";
-import { SelectField } from "./SelectField";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Text } from "./Text";
-import { ActivityIndicator } from "react-native";
+import i18n from "@/localization";
 import { useTheme } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator } from "react-native";
+import { SelectField } from "./SelectField";
+import { Text } from "./Text";
+import { View } from "./View";
 
 interface VehicleBrandSelectProps {
     onChange?: (value: string) => void;
@@ -18,7 +19,7 @@ export default function VehicleBrandSelect({ onChange }: VehicleBrandSelectProps
 
     const options = useMemo(() => {
         return [{
-            label: "Pilih Merek Kendaraan",
+            label: i18n.t("vehicle.brandPlaceholder"),
             value: "",
         }, ...brands.map(brand => ({ label: brand.name, value: brand.id }))];
     }, [brands]);
@@ -37,7 +38,7 @@ export default function VehicleBrandSelect({ onChange }: VehicleBrandSelectProps
     return (
         <View>
             <SelectField
-                label="Pilih Merek Kendaraan"
+                label={i18n.t("vehicle.brandPlaceholder")}
                 options={options}
                 value={value}
                 onValueChange={handleBrandChange}
@@ -45,7 +46,7 @@ export default function VehicleBrandSelect({ onChange }: VehicleBrandSelectProps
             {loading && (
                 <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4, opacity: 0.7 }}>
                     <ActivityIndicator size="small" color="#0000ff" />
-                    <Text>Memuat merek kendaraan...</Text>
+                    <Text>{i18n.t("vehicle.loadingBrands")}</Text>
                 </View>
             )}
             {error && (
@@ -61,7 +62,7 @@ export default function VehicleBrandSelect({ onChange }: VehicleBrandSelectProps
                         fontWeight: 'bold', marginBottom: 4,
                         color: colors.error,
                     }}>
-                        Gagal memuat merek kendaraan
+                        {i18n.t("vehicle.loadBrandsFailed")}
                     </Text>
                     <Text style={{ color: colors.error }}>
                         {error.message}

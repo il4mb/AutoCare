@@ -1,4 +1,5 @@
 import { Fonts } from '@/constants/theme';
+import i18n from '@/localization';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
@@ -25,7 +26,7 @@ export function SelectField<T extends string | number>({
     label,
     helperText,
     errorText,
-    placeholder = 'Pilih opsi',
+    placeholder = i18n.t('select.placeholder'),
     options,
     value,
     onValueChange,
@@ -109,7 +110,7 @@ export function SelectField<T extends string | number>({
                     >
                         <View style={styles.sheetHeader}>
                             <Text type="smallBold" style={{ color: colors.text }}>
-                                {label ?? 'Pilih opsi'}
+                                {label ?? i18n.t('select.placeholder')}
                             </Text>
                             <Pressable onPress={() => setOpen(false)} hitSlop={10}>
                                 <MaterialCommunityIcons
@@ -165,7 +166,7 @@ export function SelectField<T extends string | number>({
                             )}
                             ListEmptyComponent={
                                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                    Tidak ada opsi.
+                                    {i18n.t('select.noOptions')}
                                 </Text>
                             }
                         />

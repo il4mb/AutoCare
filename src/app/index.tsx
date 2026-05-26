@@ -1,10 +1,11 @@
 import { isCookieValid } from "@/api";
 import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
-import { useCallback, useEffect } from "react";
-import { useRouter } from "expo-router";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import i18n from "@/localization";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function IndexScreen() {
 
@@ -39,17 +40,17 @@ export default function IndexScreen() {
                         <MaterialCommunityIcons name="engine-outline" size={72} color="#ffffff" />
                     </View>
                     <Text type="title" style={styles.appName}>
-                        AutoCare
+                        {i18n.t("common.appName")}
                     </Text>
                     <Text style={styles.tagline}>
-                        Solusi Cerdas untuk Diagnosa Mobil Anda
+                        {i18n.t("splash.tagline")}
                     </Text>
                 </View>
 
                 {/* Area Indikator Loading di Bawah */}
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#0252ff" />
-                    <Text style={styles.loadingText}>Menyiapkan sistem...</Text>
+                    <Text style={styles.loadingText}>{i18n.t("splash.loading")}</Text>
                 </View>
 
             </View>

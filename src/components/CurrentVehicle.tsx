@@ -1,9 +1,9 @@
 import { useApp } from "@/contexts/AppProvider";
-import { View } from "./View";
+import i18n from "@/localization";
+import { useTheme } from "@react-navigation/native";
 import { useMemo } from "react";
 import { Text } from "./Text";
-import { useTheme } from "@react-navigation/native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { View } from "./View";
 
 export default function CurrentVehicle() {
 
@@ -19,7 +19,7 @@ export default function CurrentVehicle() {
         return (
             <View style={{ padding: 16 }}>
                 <Text type="small" style={{ color: colors.textSecondary }}>
-                    Tidak ada kendaraan yang dipilih.
+                    {i18n.t("vehicle.noVehicleSelected")}
                 </Text>
             </View>
         );
