@@ -1,5 +1,10 @@
 import { getLocales } from "expo-localization";
+import * as SecureStore from "expo-secure-store";
 import { I18n } from "i18n-js";
+
+export type AppLocale = "en" | "id";
+
+export const LANGUAGE_STORAGE_KEY = "preferred_language";
 
 const translations = {
     en: {
@@ -8,6 +13,7 @@ const translations = {
             welcome: "Welcome",
             back: "Back",
             cancel: "Cancel",
+            language: "Language",
         },
         select: {
             placeholder: "Choose option",
@@ -197,6 +203,7 @@ const translations = {
             welcome: "Selamat Datang",
             back: "Kembali",
             cancel: "Batal",
+            language: "Bahasa",
         },
         select: {
             placeholder: "Pilih opsi",
@@ -383,10 +390,46 @@ const translations = {
 } as const;
 
 const i18n = new I18n(translations);
-const localeCode = getLocales()[0]?.languageCode?.toLowerCase() ?? "en";
+const localeCode = getStoredLocale() ?? getDeviceLocale();
 
 i18n.defaultLocale = "en";
 i18n.enableFallback = true;
-i18n.locale = localeCode === "id" ? "id" : "en";
+i18n.locale = localeCode;
 
 export default i18n;
+
+export function normalizeLocale(value: string | null | undefined): AppLocale {
+    return value === "id" ? "id" : "en";
+}
+
+export function getDeviceLocale(): AppLocale {
+    const localeCode = getLocales()[0]?.languageCode?.toLowerCase();
+    return normalizeLocale(localeCode);
+}
+
+export function getStoredLocale(): AppLocale | null {
+    try {
+        if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+            const storedLocale = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+            return storedLocale ? normalizeLocale(storedLocale) : null;
+        }
+
+        if (typeof SecureStore.getItem === "function") {
+            const storedLocale = SecureStore.getItem(LANGUAGE_STORAGE_KEY);
+            return storedLocale ? normalizeLocale(storedLocale) : null;
+        }
+    } catch (error) {
+        console.error("Failed to load saved language", error);
+    }
+
+    return null;
+}
+
+export async function saveLocalePreference(locale: AppLocale): Promise<void> {
+    if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+        window.localStorage.setItem(LANGUAGE_STORAGE_KEY, locale);
+        return;
+    }
+
+    await SecureStore.setItemAsync(LANGUAGE_STORAGE_KEY, locale);
+}

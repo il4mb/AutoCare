@@ -65,15 +65,15 @@ export function SelectField<T extends string | number>({
                         borderColor: hasError ? colors.error : colors.bgSelected,
                         opacity: disabled ? 0.7 : 1,
                     },
-                ]}
-            >
+                ]}>
                 <Text
                     type="default"
                     style={[
                         styles.fieldText,
                         { color: selectedOption ? colors.text : colors.textSecondary },
                     ]}
-                >
+                    numberOfLines={1}
+                    ellipsizeMode="middle">
                     {selectedOption ? selectedOption.label : placeholder}
                 </Text>
 

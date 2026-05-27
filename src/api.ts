@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 const COOKIE_KEY = 'user_session_cookies';
 
 const api = axios.create({
-    baseURL: 'https://il4mb.merapihost.com/api',
+    baseURL: 'https://autocare.web.id/api',
     withCredentials: true,
     timeout: 10000, // Good practice for prod
 });

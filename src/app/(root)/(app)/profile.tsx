@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { clearCookies } from "@/api";
 import { Button } from "@/components/Button"; // Pastikan Button mendukung styling/warna
@@ -8,6 +8,7 @@ import ScreenLayout from "@/components/ScreenLayout";
 import { Text } from "@/components/Text";
 import { useApp } from "@/contexts/AppProvider";
 import i18n from "@/localization";
+import LanguageSwitcher from "@/components/LaguageSwicher";
 
 export default function Profile() {
     const router = useRouter();
@@ -22,7 +23,7 @@ export default function Profile() {
             console.error("Gagal logout:", error);
             Alert.alert(i18n.t("profile.logoutErrorTitle"), i18n.t("profile.logoutErrorMessage"));
         }
-    }   
+    }
 
     const confirmLogout = () => {
         Alert.alert(
@@ -44,9 +45,14 @@ export default function Profile() {
     return (
         <ScreenLayout applyInsets style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                
+
                 {/* Header Judul */}
-                <Text type="title" style={styles.pageTitle}>{i18n.t("profile.title")}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
+                    <Text type="title" style={styles.pageTitle}>{i18n.t("profile.title")}</Text>
+                    <View style={{ marginLeft: "auto", flex: 1, maxWidth: 150 }}>
+                        <LanguageSwitcher />
+                    </View>
+                </View>
 
                 {auth ? (
                     <>
@@ -95,14 +101,14 @@ export default function Profile() {
 
                 {/* Tombol Logout */}
                 <View style={styles.footerContainer}>
-                    <Button 
-                        title={i18n.t("profile.editProfile")} 
-                        onPress={() => router.push("/edit-profile")} 
+                    <Button
+                        title={i18n.t("profile.editProfile")}
+                        onPress={() => router.push("/edit-profile")}
                         style={styles.editButton}
                     />
-                    <Button 
-                        title={i18n.t("profile.logout")} 
-                        onPress={confirmLogout} 
+                    <Button
+                        title={i18n.t("profile.logout")}
+                        onPress={confirmLogout}
                         style={styles.logoutButton}
                     />
                 </View>
@@ -123,9 +129,9 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     pageTitle: {
-        fontSize: 28,
+        fontSize: 24,
         color: "#0f172a",
-        marginBottom: 24,
+        // marginBottom: 24,
     },
     // --- KARTU PROFIL ---
     profileCard: {
