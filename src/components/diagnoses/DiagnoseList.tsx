@@ -2,7 +2,7 @@ import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
 
 import { useApp } from "@/contexts/AppProvider";
 import { db } from "@/database";
@@ -10,6 +10,7 @@ import { Diagnose } from "@/database/model/Diagnose";
 import i18n from "@/localization";
 import { Q } from "@nozbe/watermelondb";
 import { Text } from "../Text"; // Sesuaikan path ini dengan struktur folder Anda
+import SwipableCard from "../SwipableCard";
 
 export default function DiagnoseList() {
     const { auth } = useApp();
@@ -42,6 +43,40 @@ export default function DiagnoseList() {
         router.push(`/diagnose/result?id=${id}`);
     };
 
+    const onDeleteStart = async (id: string) => {
+        return new Promise<void>((resolve) => {
+
+            const handleDelete = async () => {
+                setTimeout(() => {
+                    db.write(async () => {
+                        const record = await db.get<Diagnose>(Diagnose.table).find(id);
+                        await record.markAsDeleted(); // Tandai sebagai dihapus (soft delete)
+                    });
+                    resolve();
+                }, 300);
+            }
+
+            Alert.alert(
+                'Are You Sure?',
+                'Are you sure delete this record, this action cannot be undone!',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        onPress: () => {
+                            resolve()
+                        }
+                    },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: handleDelete
+                    }
+                ]
+            );
+        });
+    };
+
     // --- RENDER KARTU ITEM ---
     const renderItem = ({ item }: { item: Diagnose }) => {
         // Parsing data dari database
@@ -57,31 +92,38 @@ export default function DiagnoseList() {
             : "Tanggal tidak diketahui";
 
         return (
-            <Pressable
-                style={styles.card}
-                onPress={() => gotoDetail(item.id)}>
-                <View style={styles.cardHeader}>
-                    <View style={styles.modelInfo}>
-                        <MaterialCommunityIcons name="car-info" size={20} color="#0252ff" />
-                        <Text style={styles.modelNameText}>{modelName}</Text>
-                    </View>
-                    <Text style={styles.dateText}>{dateString}</Text>
-                </View>
-
-                <View style={styles.codesWrapper}>
-                    {codes.length > 0 ? (
-                        codes.map((code) => (
-                            <View key={code} style={styles.codeBadge}>
-                                <Text style={styles.codeText}>{code}</Text>
-                            </View>
-                        ))
-                    ) : (
-                        <View style={[styles.codeBadge, styles.healthyBadge]}>
-                            <Text style={styles.healthyText}>{i18n.t("diagnose.healthyBadge")}</Text>
+            <SwipableCard
+                startAction={{
+                    label: i18n.t("common.delete"),
+                    onInvoke: async () => onDeleteStart(item.id),
+                    color: '#ef4444', // Merah 500
+                }}>
+                <Pressable
+                    style={styles.card}
+                    onPress={() => gotoDetail(item.id)}>
+                    <View style={styles.cardHeader}>
+                        <View style={styles.modelInfo}>
+                            <MaterialCommunityIcons name="car-info" size={20} color="#0252ff" />
+                            <Text style={styles.modelNameText}>{modelName}</Text>
                         </View>
-                    )}
-                </View>
-            </Pressable>
+                        <Text style={styles.dateText}>{dateString}</Text>
+                    </View>
+
+                    <View style={styles.codesWrapper}>
+                        {codes.length > 0 ? (
+                            codes.map((code) => (
+                                <View key={code} style={styles.codeBadge}>
+                                    <Text style={styles.codeText}>{code}</Text>
+                                </View>
+                            ))
+                        ) : (
+                            <View style={[styles.codeBadge, styles.healthyBadge]}>
+                                <Text style={styles.healthyText}>{i18n.t("diagnose.healthyBadge")}</Text>
+                            </View>
+                        )}
+                    </View>
+                </Pressable>
+            </SwipableCard>
         );
     };
 

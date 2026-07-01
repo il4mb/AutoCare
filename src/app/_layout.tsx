@@ -5,7 +5,7 @@ import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { useMemo } from 'react';
 import { StatusBar } from 'react-native';
-import { BlurTargetView } from 'expo-blur';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function TabLayout() {
 
@@ -32,21 +32,23 @@ export default function TabLayout() {
 
     return (
         <ThemeProvider value={theme}>
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(root)" />
-                <Stack.Screen name="sign-up" />
-                <Stack.Screen name="sign-in" />
-                <Stack.Screen
-                    name="forgot-password"
-                    options={{
-                        presentation: "modal",
-                        animation: "slide_from_bottom",
-                        headerShown: false,
-                    }}
-                />
-            </Stack>
-            <StatusBar barStyle={"dark-content"} />
+            <GestureHandlerRootView>
+                <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(root)" />
+                    <Stack.Screen name="sign-up" />
+                    <Stack.Screen name="sign-in" />
+                    <Stack.Screen
+                        name="forgot-password"
+                        options={{
+                            presentation: "modal",
+                            animation: "slide_from_bottom",
+                            headerShown: false,
+                        }}
+                    />
+                </Stack>
+                <StatusBar barStyle={"dark-content"} />
+            </GestureHandlerRootView>
         </ThemeProvider>
     );
 }

@@ -18,7 +18,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.autocare"
+      "package": "com.anonymous.autocare",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ]
     },
     "web": {
       "output": "static",
@@ -53,6 +58,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bb40df5b-0ca7-48ae-9d5a-d6aa433f167e"
+      }
     }
   }
 }

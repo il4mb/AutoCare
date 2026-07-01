@@ -1,5 +1,10 @@
 # APLIKASI CAR MELIHAT KERUSAKAN MOBIL DENGAN KONEKSI KE ICU MOBIL DENGAN BLUETOOTH
 
+## Gunakan Gradle
+```
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip
+```
+
 ## Fitur
 - 1. Login
 - 2. Register

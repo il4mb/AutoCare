@@ -49,14 +49,14 @@ export default function ConnectScreen() {
 
         try {
 
-            console.log("Memulai Inisialisasi...");
+            console.log("1. Memulai Inisialisasi...");
             await ClassicBT.readFromDevice(address).catch(() => { });
-            await connect.request("ATZ"); // reset device
-            await connect.request("ATE0"); // echo off
-            await connect.request("ATL0"); // linefeed off
-            await connect.request("ATSP0"); // auto protocol
-            await connect.request("0100"); // request supported PIDs to check if connection is valid and get ready for next commands
-            const rawCode = await connect.request("03"); // request DTC codes
+            await connect.request("ATZ");
+            await connect.request("ATE0");
+            await connect.request("ATL0");
+            await connect.request("ATSP0");
+            await connect.request("0100");
+            const rawCode = await connect.request("03", 10000);
             const dtcCodes = parseODBResponse(rawCode);
 
             if (dtcCodes.length === 0) {
@@ -192,7 +192,7 @@ export default function ConnectScreen() {
                         <View style={styles.diagnosticsContainer}>
                             <View style={styles.terminalContainer}>
                                 <View style={styles.terminalHeader}>
-                                        <Text style={styles.terminalTitle}>{i18n.t("bluetooth.obdConsoleTitle")}</Text>
+                                    <Text style={styles.terminalTitle}>{i18n.t("bluetooth.obdConsoleTitle")}</Text>
                                     <View style={styles.terminalDots}>
                                         <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
                                         <View style={[styles.dot, { backgroundColor: '#eab308' }]} />

@@ -84,52 +84,34 @@ export const useConnect = (address: string) => {
         }
     }, [address]);
 
-    const write = async (data: string) => {
-        if (!connected) {
-            console.warn("Tidak dapat mengirim data: Perangkat tidak terhubung");
-            return;
-        }
-        try {
-            const command = data.endsWith('\r') ? data : data + '\r';
-
-            addLog('TX', data); // Catat ke UI State (tanpa \r agar rapi)
-            await ClassicBT.writeToDevice(address, command, 'ascii');
-
-            console.log("Data berhasil dikirim ke perangkat:", data);
-        } catch (err) {
-            console.error("Gagal mengirim data:", err);
-            addLog('TX', `[ERROR] Gagal mengirim: ${data}`);
-        }
-    };
-
-    // Fungsi cerdas berbasis Promise untuk Tanya & Tunggu balasan
-    const request = (command: string, timeoutMs: number = 5000): Promise<string> => {
-        return new Promise((resolve, reject) => {
+    const request = (command: string, timeoutMs: number = 6000): Promise<string> => {
+        return new Promise(async (resolve, reject) => {
             if (!connected) {
                 return reject(new Error("Perangkat tidak terhubung"));
             }
 
-            const timeout = setTimeout(() => {
-                readCallbacksRef.current.delete(handler);
-                reject(new Error(`Timeout: Tidak ada balasan untuk perintah ${command}`));
-            }, timeoutMs);
-
-            const handler = (data: string) => {
-                clearTimeout(timeout);
-                readCallbacksRef.current.delete(handler);
-                resolve(data);
-            };
-
-            readCallbacksRef.current.add(handler);
-
             const finalCommand = command.endsWith('\r') ? command : command + '\r';
+            addLog('TX', command);
 
-            addLog('TX', command); // Catat ke UI State
-            ClassicBT.writeToDevice(address, finalCommand, 'ascii').catch((err) => {
-                clearTimeout(timeout);
-                readCallbacksRef.current.delete(handler);
+            let timeoutHandle = setTimeout(() => {
+                reject(new Error("Request timeout: Tidak ada respon dalam waktu yang ditentukan"));
+            }, timeoutMs);
+            const subscription = ClassicBT.onDeviceRead(address, (event) => {
+
+                console.log(`[${command}]:`, event.data);
+                subscription.remove();
+                clearTimeout(timeoutHandle);
+                const cleanData = event.data.replace(/[\r\n]+/g, ' ').trim();
+                addLog('RX', cleanData);
+                resolve(cleanData);
+            });
+
+            await ClassicBT.writeToDevice(address, finalCommand, 'ascii').catch((err) => {
+                clearTimeout(timeoutHandle);
+                subscription.remove();
                 reject(err);
             });
+            console.log(`[${command}] Dikirim ke perangkat, menunggu respon...`);
         });
     };
 
@@ -143,41 +125,37 @@ export const useConnect = (address: string) => {
     // ------------------------------------------------------------------
     // EFFECT 1: BIND & UNBIND NATIVE LISTENER
     // ------------------------------------------------------------------
-    useEffect(() => {
-        if (nativeReadSubscriptionRef.current) {
-            nativeReadSubscriptionRef.current.remove();
-            nativeReadSubscriptionRef.current = null;
-        }
+    // useEffect(() => {
+    //     if (nativeReadSubscriptionRef.current) {
+    //         nativeReadSubscriptionRef.current.remove();
+    //         nativeReadSubscriptionRef.current = null;
+    //     }
 
-        const bindNativeListener = async () => {
-            const isConnected = await ClassicBT.isDeviceConnected(address);
-            if (!isConnected) return;
+    //     const bindNativeListener = async () => {
+    //         const isConnected = await ClassicBT.isDeviceConnected(address);
+    //         if (!isConnected) return;
 
-            console.log("Binding listener untuk perangkat:", address);
+    //         console.log("Binding listener untuk perangkat:", address);
 
-            nativeReadSubscriptionRef.current = ClassicBT.onDeviceRead(address, (event) => {
-                // Bersihkan karakter \r dan \n 
-                const cleanData = event.data.replace(/[\r\n]+/g, ' ').trim();
+    //         nativeReadSubscriptionRef.current = ClassicBT.onDeviceRead(address, (event) => {
+    //             console.log("Data diterima dari perangkat:", event);
+    //             // Bersihkan karakter \r dan \n 
+    //             const cleanData = event.data.replace(/[\r\n]+/g, ' ').trim();
+    //             if (!cleanData) return
+    //             // Teruskan data ke subscriber (termasuk fungsi request)
+    //             readCallbacksRef.current.forEach((cb) => cb(cleanData));
+    //         });
+    //     }
 
-                if (!cleanData) return;
+    //     bindNativeListener();
 
-                console.log(`[OBD] Balasan: ${cleanData}`);
-                addLog('RX', cleanData); // Catat balasan ke UI State
-
-                // Teruskan data ke subscriber (termasuk fungsi request)
-                readCallbacksRef.current.forEach((cb) => cb(cleanData));
-            });
-        }
-
-        bindNativeListener();
-
-        return () => {
-            if (nativeReadSubscriptionRef.current) {
-                nativeReadSubscriptionRef.current.remove();
-                nativeReadSubscriptionRef.current = null;
-            }
-        };
-    }, [connected, address, addLog]);
+    //     return () => {
+    //         if (nativeReadSubscriptionRef.current) {
+    //             nativeReadSubscriptionRef.current.remove();
+    //             nativeReadSubscriptionRef.current = null;
+    //         }
+    //     };
+    // }, [connected, address, addLog]);
 
     // ------------------------------------------------------------------
     // EFFECT 2: CEK KONEKSI AWAL & MONITOR SYSTEM DISCONNECT
@@ -229,7 +207,7 @@ export const useConnect = (address: string) => {
         commandLogs,
         connect,
         disconnect,
-        write,
+        // write,
         request,
         onDataReceived,
         clearLogs

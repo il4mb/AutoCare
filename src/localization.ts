@@ -14,6 +14,7 @@ const translations = {
             back: "Back",
             cancel: "Cancel",
             language: "Language",
+            delete: "Delete",
         },
         select: {
             placeholder: "Choose option",
@@ -204,6 +205,7 @@ const translations = {
             back: "Kembali",
             cancel: "Batal",
             language: "Bahasa",
+            delete: "Hapus",
         },
         select: {
             placeholder: "Pilih opsi",
