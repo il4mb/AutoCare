@@ -15,7 +15,7 @@ export const useVehicleBrands = () => {
         setError(null);
         setLoading(true);
         try {
-            const response = await api.get("/dictionary/brands");
+            const response = await api.get("/dictionary/brands?limit=1000");
             if (response.status !== 200) {
                 if (response.status === 401) {
                     throw new Error("Unauthorized. Please log in again.");

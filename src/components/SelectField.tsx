@@ -98,16 +98,14 @@ export function SelectField<T extends string | number>({
                 animationType="fade"
                 transparent
                 visible={open}
-                onRequestClose={() => setOpen(false)}
-            >
+                onRequestClose={() => setOpen(false)}>
                 <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
                     <Pressable
                         style={[
                             styles.sheet,
                             { backgroundColor: colors.bg, borderColor: colors.bgSelected },
                         ]}
-                        onPress={() => null}
-                    >
+                        onPress={() => null}>
                         <View style={styles.sheetHeader}>
                             <Text type="smallBold" style={{ color: colors.text }}>
                                 {label ?? i18n.t('select.placeholder')}
@@ -127,37 +125,12 @@ export function SelectField<T extends string | number>({
                             keyboardShouldPersistTaps="handled"
                             renderItem={({ item }) => {
                                 const isSelected = item.value === value;
-
                                 return (
-                                    <Pressable
-                                        onPress={() => handleSelect(item.value)}
-                                        style={[
-                                            styles.option,
-                                            {
-                                                backgroundColor: isSelected
-                                                    ? colors.bgSelected
-                                                    : colors.bg,
-                                            },
-                                        ]}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.optionText,
-                                                {
-                                                    color: isSelected ? colors.primary : colors.text,
-                                                },
-                                            ]}
-                                            type="default"
-                                        >
+                                    <Pressable onPress={() => handleSelect(item.value)} style={[styles.option, { backgroundColor: isSelected ? colors.bgSelected : colors.bg }]}>
+                                        <Text style={[styles.optionText, { color: isSelected ? colors.primary : colors.text }]} type="default">
                                             {item.label}
                                         </Text>
-                                        {isSelected ? (
-                                            <MaterialCommunityIcons
-                                                name="check"
-                                                size={20}
-                                                color={colors.primary}
-                                            />
-                                        ) : null}
+                                        {isSelected ? (<MaterialCommunityIcons name="check" size={20} color={colors.primary} />) : null}
                                     </Pressable>
                                 );
                             }}
